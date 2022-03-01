@@ -1,4 +1,5 @@
 ﻿  Server.cpp
-C:\Users\kim\Desktop\자료\서버공부\ChatServer\Server\Server\Server.cpp(81,27): warning C4101: '_clientAddr' :참조되지 않은 지역 변수입니다.
-C:\Users\kim\Desktop\자료\서버공부\ChatServer\Server\Server\Server.cpp(83,6): warning C4101: 'clientAddrSize' :참조되지 않은 지역 변수입니다.
-  Server.vcxproj -> C:\Users\kim\Desktop\자료\서버공부\ChatServer\Server\Debug\Server.exe
+C:\Users\kim\Desktop\ChatServer\Server\Server.cpp(163,16): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
+C:\Users\kim\Desktop\ChatServer\Server\Server.cpp(210,20): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
+C:\Users\kim\Desktop\ChatServer\Server\Server.cpp(270,21): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
+  Server.vcxproj -> C:\Users\kim\Desktop\ChatServer\Debug\Server.exe
