@@ -32,7 +32,7 @@ private:
 	string name;
 	string joinTime;
 	State state;
-
+	ROOM *myRoom;
 
 public:
 	SOCKET socket;
@@ -66,6 +66,13 @@ public:
 	State GetState() {
 		return this->state;
 	}
+	void SetmyRoom(ROOM* room) {
+		myRoom = room;
+	}
+	ROOM* GetmyRoom() {
+		return myRoom;
+	}
+	
 	bool operator < (const USER& ref) const {
 		return name<ref.name;
 	}
@@ -80,7 +87,7 @@ private:
 	string openTime;
 	int maxCnt;
 	int curCnt;
-	set<USER> users;
+	set<USER*> users;
 public:
 	ROOM() {
 		SetOpen(false);
@@ -100,14 +107,22 @@ public:
 		return isOpen;
 	}
 	void SetUser(USER* user) {
-		users.insert(*user);
+		users.insert(user);
+		user->SetmyRoom(this);
 		user->SetState(State::room);
+
 	}
-	set<USER> GetUsers() {
+	set<USER*> GetUsers() {
 		return users;
 	}
 	string GetName() {
 		return name;
+	}
+	void DisConnectUser(USER *u) {
+		users.erase(u);
+		if (users.size() <= 0) {
+			SetOpen(false);
+		}
 	}
 };
 //////////////////////////////////////////////////////////////
@@ -177,11 +192,14 @@ void SendMsg(SOCKET& socket, const char c[]) {
 
 
 void OnDisConnect(SOCKET* tmp) {
+	OnDisConnectRoom(tmp);
 	NameList.erase(UserList.at(*tmp)->GetName());
 	UserList.erase(*tmp);
 	closesocket(*tmp);
-	cout << UserList.size() << "\n";
-
+	//cout << UserList.size() << "\n";
+}
+void OnDisConnectRoom(SOCKET* tmp) {
+	UserList.at(*tmp)->GetmyRoom()->DisConnectUser(UserList.at(*tmp));
 }
 void Login(USER *user, string name) {
 	/*
@@ -291,7 +309,6 @@ int main()
 						printf("[%d] LogOut\n", read.fd_array[i]);
 						FD_CLR(read.fd_array[i], &read);
 						OnDisConnect(&tmp.fd_array[i]);
-						//closesocket(tmp.fd_array[i]);
 					}
 					else
 					{
@@ -319,7 +336,6 @@ int main()
 										}
 									}
 									else {
-										cout << UserList[read.fd_array[i]]->GetPort()<<"\n";
 										SendMsg(UserList[read.fd_array[i]]->socket, "**로그인 명령어(LOGIN)를 사용해주세요.\r\n");
 									}
 								}
@@ -337,12 +353,20 @@ int main()
 									}
 									else if (orderList[0] == "LT")
 									{
+										vector<int> openRoomIdx;
+										int cnt = 0;
 										for (auto iter = RoomList.begin();iter!=RoomList.end();iter++) {
 											if (iter->GetOpen() == true) {
-												SendMsg(UserList[read.fd_array[i]]->socket, (iter->GetName()+"\r\n").c_str());
+												openRoomIdx.push_back(cnt);
 											}
+											cnt++;
 										}
-									
+										string s = "-----------------------------------------------------\r\n";
+										for (int i = 0; i < openRoomIdx.size(); i++) {
+											s+= to_string(openRoomIdx[i]+1)+"번:"+RoomList[openRoomIdx[i]].GetName()+"\r\n";
+										}
+										s+= "-----------------------------------------------------\r\n";
+										SendMsg(UserList[read.fd_array[i]]->socket, s.c_str());
 									}
 									else if (orderList[0] == "ST")
 									{
@@ -374,7 +398,8 @@ int main()
 													ROOM* room= &RoomList[FindEmptyRoomIdx()];
 													room->SetROOM(orderList[2], UserList[read.fd_array[i]]->GetName(), "2022-02-22", stoi(orderList[1]));
 													room->SetUser(UserList[read.fd_array[i]]);
-													SendMsg(UserList[read.fd_array[i]]->socket, "대화방이 개설되었습니다.\r\n");
+													string s = "대화방이 개설되었습니다.\r\n" + UserList[read.fd_array[i]]->GetName() + "님이 입장했습니다.\r\n";
+													SendMsg(UserList[read.fd_array[i]]->socket,s.c_str());
 												}
 												else {
 													SendMsg(UserList[read.fd_array[i]]->socket, "대화방 제목이 필요합니다.\r\n");
@@ -391,8 +416,24 @@ int main()
 									}
 									else if (orderList[0] == "J")
 									{
-										//대화방 참가하기
-										SendMsg(UserList[read.fd_array[i]]->socket, "** 올바른 사용법은 LOGIN [ID] 입니다.\r\n");
+										//** 올바른 사용법은 J [방번호] 입니다.
+										//** 존재하지 않는 대화방입니다. 
+										if (orderList.size() > 1)
+										{
+											if (isNumber(orderList[1]) && RoomList[stoi(orderList[1])-1].GetOpen()) {
+												RoomList[stoi(orderList[1])-1].SetUser(UserList[read.fd_array[i]]);
+												string s = UserList[read.fd_array[i]]->GetName() + "님이 입장했습니다.\r\n";
+												for (USER* u : UserList[read.fd_array[i]]->GetmyRoom()->GetUsers()) {
+													SendMsg(u->socket, s.c_str());
+												}
+											}
+											else {
+												SendMsg(UserList[read.fd_array[i]]->socket, "** 존재하지 않는 대화방입니다.\r\n");
+											}
+										}
+										else {
+											SendMsg(UserList[read.fd_array[i]]->socket, "** 올바른 사용법은 J [방번호] 입니다.\r\n");
+										}
 									}
 									else if (orderList[0] == "X")
 									{
@@ -405,7 +446,9 @@ int main()
 								}
 								break;
 							case State::room:
-								SendMsg(UserList[read.fd_array[i]]->socket, (">" + msgString + "\r\n").c_str());
+								for (USER *u : UserList[read.fd_array[i]]->GetmyRoom()->GetUsers()) {
+									SendMsg(u->socket, (UserList[read.fd_array[i]]->GetName()+">" + msgString + "\r\n").c_str());
+								}
 								break;
 							default:
 								break;
