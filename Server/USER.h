@@ -23,6 +23,7 @@ class Manager;
 class ROOM;
 class USER {
 private:
+	bool isFin;
 	string name;
 	string joinTime;
 	State state;
@@ -49,4 +50,6 @@ public:
 	void SendMsg(const string s);
 	bool CatchOrder(char*);
 	char* AssembleBuffer();
+	bool GetFin();
+	void SetFin(bool);
 };

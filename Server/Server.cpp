@@ -1,12 +1,16 @@
 ﻿#include "Manager.h"
 #include "USER.h"
 #include "ROOM.h"
+#include "DataParse.h"
+
+
 using namespace std;
 
 int main()
 {
 	Manager m;
-	m.ServerON();
+
+	m.ServerON("Data.json");
 
 	fd_set read, tmp;
 	TIMEVAL time;
@@ -67,130 +71,50 @@ int main()
 
 							string msgString(msg);
 							vector<string> orderList = m.split(msgString, " ", 2);
-
+							bool order=m.ExcuteOrder(m.UserList[read.fd_array[i]], orderList);
 							switch (m.UserList[read.fd_array[i]]->GetState())
 							{
 							case State::auth:
-								if (orderList.size() > 0)
-								{
-									if (orderList[0] == "LOGIN")
+								if (!order) {
+									if (m.UserList[read.fd_array[i]]->GetState() == State::auth)
 									{
-										m.Login(m.UserList[read.fd_array[i]], orderList);
-									}
-									else {
 										m.UserList[read.fd_array[i]]->SendMsg("**로그인 명령어(LOGIN)를 사용해주세요.\r\n");
 									}
 								}
 								break;
 
 							case State::lobby:
-								if (orderList.size() > 0)
+								if (m.UserList[read.fd_array[i]]->GetState() == State::lobby)
 								{
-									if (orderList[0] == "H")
-									{
-										m.H(m.UserList[read.fd_array[i]], orderList);
-									}
-									else if (orderList[0] == "US")
-									{
-										m.US(m.UserList[read.fd_array[i]], orderList);
-									}
-									else if (orderList[0] == "LT")
-									{
-										m.LT(m.UserList[read.fd_array[i]], orderList);
-									}
-									else if (orderList[0] == "ST")
-									{
-										m.ST(m.UserList[read.fd_array[i]], orderList);
-									}
-									else if (orderList[0] == "PF")
-									{
-										m.PF(m.UserList[read.fd_array[i]], orderList);
-									}
-									else if (orderList[0] == "TO")
-									{
-										m.TO(m.UserList[read.fd_array[i]], orderList);
-									}
-									else if (orderList[0] == "O")
-									{
-										m.O(m.UserList[read.fd_array[i]], orderList);
-									}
-									else if (orderList[0] == "J")
-									{
-										m.J(m.UserList[read.fd_array[i]], orderList);
-									}
-									else if (orderList[0] == "X")
-									{
-										m.UserList[read.fd_array[i]]->SendMsg("** 종료합니다.\r\n");
-										FD_CLR(read.fd_array[i], &read);
-										m.DisConnect(&tmp.fd_array[i]);
-										continue;
-									}
-								}
-								if (m.UserList[read.fd_array[i]]->GetState() == State::lobby) 
-								{
+									//입력창 출력
 									m.SendPrompt(m.UserList[read.fd_array[i]]);
 								}
-
 								break;
 
 							case State::room:
-								if (orderList.size()>0 && orderList[0].at(0) == '/') {
-									if (orderList[0] == "/H")
-									{
-										m.H_(m.UserList[read.fd_array[i]], orderList);
-									}
-									else if (orderList[0] == "/US")
-									{
-										m.US(m.UserList[read.fd_array[i]], orderList);
-									}
-									else if (orderList[0] == "/LT")
-									{
-										m.LT(m.UserList[read.fd_array[i]], orderList);
-									}
-									else if (orderList[0] == "/ST")
-									{
-										m.ST(m.UserList[read.fd_array[i]], orderList);
-									}
-									else if (orderList[0] == "/PF")
-									{
-										m.PF(m.UserList[read.fd_array[i]], orderList);
-									}
-									else if (orderList[0] == "/TO")
-									{
-										m.TO(m.UserList[read.fd_array[i]], orderList);
-									}
-									else if (orderList[0] == "/IN")
-									{
-										m.IN_(m.UserList[read.fd_array[i]], orderList);
-									}
-									else if (orderList[0] == "/Q")
-									{
-										m.Q(m.UserList[read.fd_array[i]], orderList);
-									}
-									else if (orderList[0] == "/X")
-									{
-										m.UserList[read.fd_array[i]]->SendMsg( "** 종료합니다.\r\n");
-										FD_CLR(read.fd_array[i], &read);
-										m.DisConnect(&tmp.fd_array[i]);
-										continue;
-									}
-								}
-								else
-								{
+								//룸 전체에게 채팅 보내기
+								if (!order) {
 									for (USER* u : m.UserList[read.fd_array[i]]->GetmyRoom()->GetUsers())
 									{
 										u->SendMsg(m.UserList[read.fd_array[i]]->GetName() + ">" + msgString + "\r\n");
 									}
 								}
 								break;
-
 							default:
 								break;
 							}
+							//버퍼 비우기
 							delete msg;
 							m.UserList[read.fd_array[i]]->buffer.clear();
+
+							//소켓 종료 요청 확인
+							if (m.UserList[read.fd_array[i]]->GetFin()) {
+								FD_CLR(read.fd_array[i], &read);
+								m.DisConnect(&tmp.fd_array[i]);
+								continue;
+							}
 						}
-						else 
+						else
 						{
 							//명령어 수집
 							m.UserList[read.fd_array[i]]->buffer.push_back(c);

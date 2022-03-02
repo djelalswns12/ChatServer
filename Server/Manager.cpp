@@ -1,5 +1,17 @@
 #include "Manager.h"
-
+bool Manager::ExcuteOrder(USER* u, vector<string>& vec) {
+	if (vec.size() <= 0)
+	{
+		return false;
+	}
+	if (stoi(DB.GetData(vec[0], "state")) == (int)(u->GetState())) {
+		if (OrderFuncs.find(vec[0]) != OrderFuncs.end()) {
+			(this->*(Manager::OrderFuncs[vec[0]]))(u, vec);
+			return true;
+		}
+	}
+	return false;
+}
 string Manager::GetNowTime()
 {
 	time_t timer = time(NULL);
@@ -69,13 +81,15 @@ bool Manager::isNumber(string s) {
 	return true;
 }
 
-void Manager::ServerON() {
+void Manager::ServerON(string data) {
+	DB.ReadData(data);
+	SetOrder(DB.GetOrderData());
 	InitSocket();
 	CreateSocket();
 	SetSocketInfo();
 	Bind();
 	Listen();
-	RoomList = vector<ROOM>(100);
+	RoomList = vector<ROOM>(100); // 룸사이즈 동적으로 변하게 추가 예정
 }
 void Manager::InitSocket() {
 	if (WSAStartup(MAKEWORD(2, 2), &soData) != 0) {
@@ -118,7 +132,10 @@ void Manager::DisConnectRoom(SOCKET* tmp) {
 	if (UserList.at(*tmp)->GetmyRoom() != nullptr) {
 		for (USER* u : UserList[*tmp]->GetmyRoom()->GetUsers())
 		{
-			u->SendMsg(UserList[*tmp]->GetName() + "님이 나가셨습니다\r\n");
+			if (u->socket == *tmp && u->GetFin()) {
+				continue;
+			}
+				u->SendMsg(UserList[*tmp]->GetName() + "님이 나가셨습니다\r\n");
 		}
 		UserList.at(*tmp)->GetmyRoom()->DisConnectUser(UserList.at(*tmp));
 		UserList.at(*tmp)->SetmyRoom(nullptr, "");
@@ -139,30 +156,22 @@ void Manager::SendPrompt(USER* user) {
 	user->SendMsg("선택>");
 }
 void Manager::Login(USER* user, vector<string>& orderList) {
-	/*
-	닉네임 설정 후
-	닉네임 리스트에 추가
-	유저 상태 변경
-	*/
 	if (orderList.size() > 1 && orderList[1].length() > 0) {
 		if (user->GetState() != State::auth) {
-			//이미 로그인됨
-			cout << "이미 로그인됨";
 			return;
 		}
 		if (NameList.find(orderList[1]) == NameList.end()) {
 			user->SetName(orderList[1]);
 			NameList.insert(make_pair(orderList[1], user));
 			user->SetState(State::lobby);
-			user->SendMsg("-----------------------------------------------------\r\n 반갑습니다. 텍스트 채팅 서버 ver 0.1 입니다.\r\n 이용중 불편하신 점이 있으면 아래 이메일로 문의 바랍니다.\r\n 감사합니다.\r\n\t\tprogrammed & arranged by MIN JOON \r\n\t\temail:djelalswns12@naver.com\r\n-----------------------------------------------------\r\n");
-			SendPrompt(user);
+			user->SendMsg(DB.GetData(orderList[0], "comment0"));
 		}
 		else {
-			user->SendMsg("**아이디를 이미 사용중입니다.다른 아이디를 사용해주세요.\r\n");
+			user->SendMsg(DB.GetData(orderList[0], "comment1"));
 		}
 	}
 	else {
-		user->SendMsg("** 올바른 사용법은 LOGIN [ID] 입니다.\r\n");
+		user->SendMsg(DB.GetData(orderList[0], "comment0"));
 	}
 }
 
@@ -179,24 +188,19 @@ int Manager::FindEmptyRoomIdx() {
 
 void Manager::US(USER* user, vector<string>& orderList) 
 {
-	string s = "---------------------이용자 목록---------------------\r\n";
+	string s = "";
 	for (auto iter = UserList.begin(); iter != UserList.end(); iter++) {
-		s += " 이용자: " + (iter->second->GetName()) + "\t접속지: " + iter->second->GetIP() + to_string(iter->second->GetPort()) + "\r\n";;
+		s += DB.AssignData(DB.GetData(orderList[0], "comment0"), vector<string>{iter->second->GetName(), iter->second->GetIP(), to_string(iter->second->GetPort())});
 	}
-	s += "-----------------------------------------------------\r\n";
 	user->SendMsg(s.c_str());
 }
 void Manager::H(USER* user, vector<string>& orderList) 
 {
-	user->SendMsg(
-		"-----------------------------------------------------\r\nH\t\t\t명령어 안내\r\nUS\t\t\t이용자 목록 보기\r\nLT\t\t\t대화방 목록 보기\r\nST [방번호]\t\t대화방 정보 보기\r\nPF [상대방ID]\t\t이용자 정보 보기\r\nTO [상대방ID] [메시지]\t쪽지 보내기\r\nO  [최대인원] [방제목]\t대화방 만들기\r\nJ  [방번호]\t\t대화방 참여하기\r\nX\t\t\t끝내기\r\n-----------------------------------------------------\r\n"
-	);
+	user->SendMsg(DB.GetData(orderList[0], "comment0"));
 }
 void Manager::H_(USER* user, vector<string>& orderList) 
 {
-	user->SendMsg(
-		"-----------------------------------------------------\r\n/H\t\t\t명령어 안내\r\n/US\t\t\t이용자 목록 보기\r\n/LT\t\t\t대화방 목록 보기\r\n/ST [방번호]\t\t대화방 정보 보기\r\n/PF [상대방ID]\t\t이용자 정보 보기\r\n/TO [상대방ID] [메시지]\t쪽지 보내기\r\n/IN [상대방ID]\t\t초대하기\r\n/Q\t\t\t대화방 나가기\r\n/X\t\t\t끝내기\r\n-----------------------------------------------------\r\n"
-	);
+	user->SendMsg(DB.GetData(orderList[0], "comment0"));
 }
 void Manager::LT(USER* user, vector<string>& orderList) 
 {
@@ -208,11 +212,10 @@ void Manager::LT(USER* user, vector<string>& orderList)
 		}
 		cnt++;
 	}
-	string s = "-----------------------------------------------------\r\n";
+	string s = "";
 	for (int i = 0; i < openRoomIdx.size(); i++) {
-		s += "[\t" + to_string(openRoomIdx[i] + 1) + "]: (" + to_string(RoomList[openRoomIdx[i]].GetUsersSize()) + "/" + to_string(RoomList[openRoomIdx[i]].GetMaxCnt()) + ") " + RoomList[openRoomIdx[i]].GetName() + "\r\n";
+		s += DB.AssignData(DB.GetData(orderList[0], "comment0"), vector<string>{to_string(openRoomIdx[i] + 1), to_string(RoomList[openRoomIdx[i]].GetUsersSize()) , to_string(RoomList[openRoomIdx[i]].GetMaxCnt()), RoomList[openRoomIdx[i]].GetName()});
 	}
-	s += "-----------------------------------------------------\r\n";
 	user->SendMsg(s.c_str());
 }
 void Manager::J(USER* user, vector<string>& orderList)
@@ -223,26 +226,24 @@ void Manager::J(USER* user, vector<string>& orderList)
 		if (isNumber(orderList[1]) && RoomList[stoi(orderList[1]) - 1].GetOpen()) {
 			if (RoomList[stoi(orderList[1]) - 1].isFull() == false) {
 				RoomList[stoi(orderList[1]) - 1].SetUser(user);
-				s = user->GetName() + "님이 입장했습니다.\r\n";
+				s = DB.AssignData(DB.GetData(orderList[0], "comment0"), vector<string>{user->GetName() });
 				for (USER* u : user->GetmyRoom()->GetUsers()) {
 					u->SendMsg(s.c_str());
 				}
+				return;
 			}
 			else {
-				s = "** 인원이 꽉차서 참여할 수 없습니다.\r\n";
-				user->SendMsg(s.c_str());
+				s = DB.GetData(orderList[0], "comment1");
 			}
 		}
 		else {
-			s = "** 존재하지 않는 대화방입니다.\r\n";
-			user->SendMsg(s.c_str());
+			s = DB.GetData(orderList[0], "comment2");
 		}
 	}
 	else {
-		s = "** 올바른 사용법은 J [방번호] 입니다.\r\n";
-		user->SendMsg(s.c_str());
+		s = DB.GetData(orderList[0], "comment3");
 	}
-
+	user->SendMsg(s.c_str());
 }
 void Manager::O(USER* user, vector<string>& orderList)
 {
@@ -270,6 +271,11 @@ void Manager::O(USER* user, vector<string>& orderList)
 		s = "올바른 사용법은 O [최대인원] [방제목] 입니다.\r\n";
 	}
 	user->SendMsg(s.c_str());
+}void Manager::X(USER* user, vector<string>& orderList)
+{
+	//대화방 만들기
+	user->SendMsg("** 종료메세지.\r\n");
+	user->SetFin(true);
 }
 void Manager::TO(USER* user, vector<string>& orderList)
 {
@@ -306,29 +312,33 @@ void Manager::TO(USER* user, vector<string>& orderList)
 }
 void Manager::ST(USER* user, vector<string>& orderList)
 {
-	//** 올바른 사용법은 ST [방번호] 입니다.  
-										//**존재하지 않는 대화방입니다.
+	string s;
 	if (orderList.size() > 1 && isNumber(orderList[1])) {
 		int roomIdx = stoi(orderList[1]) - 1;
 		if (RoomList[roomIdx].GetOpen()) {
-			string s = "-----------------------------------------------------\r\n";
+
 			//룸 정보
-			s += "[\t" + to_string(roomIdx + 1) + "]: (" + to_string(RoomList[roomIdx].GetUsersSize()) + "/" + to_string(RoomList[roomIdx].GetMaxCnt()) + ") " + RoomList[roomIdx].GetName() + "\r\n";
-			s += " 개설시간: " + RoomList[roomIdx].GetOpenTime() + "\r\n";
+			s+= DB.AssignData(DB.GetData(orderList[0], "comment0"), vector<string>{ to_string(roomIdx + 1), to_string(RoomList[roomIdx].GetUsersSize()), to_string(RoomList[roomIdx].GetMaxCnt()), RoomList[roomIdx].GetName() });
+
+			//개설 시간
+			s +=  DB.AssignData(DB.GetData(orderList[0], "comment1"), vector<string>{RoomList[roomIdx].GetOpenTime() });
+
 			for (USER* u : RoomList[roomIdx].GetUsers()) {
-				s += " 참여자: " + u->GetName() + "\t" + "참여시간: " + u->GetJoinTime() + "\r\n";
+				//참여자 정보
+				s+= DB.AssignData(DB.GetData(orderList[0], "comment2"), vector<string>{u->GetName(), u->GetJoinTime()});
+
 			}
-			//참여자 정보
-			s += "-----------------------------------------------------\r\n";
-			user->SendMsg(s.c_str());
+			s += DB.GetData(orderList[0], "comment3");
 		}
 		else {
-			user->SendMsg("**존재하지 않는 대화방입니다.\r\n");
+			s= DB.GetData(orderList[0], "comment4");
 		}
 	}
 	else {
-		user->SendMsg("** 올바른 사용법은 ST [방번호] 입니다.\r\n");
+		s= DB.GetData(orderList[0], "comment5");
 	}
+
+	user->SendMsg(s.c_str());
 }
 void Manager::PF(USER* user, vector<string>& orderList)
 {
@@ -365,7 +375,6 @@ void Manager::PF(USER* user, vector<string>& orderList)
 void Manager::Q(USER* user, vector<string>& orderList)
 {
 	DisConnectRoom(&user->socket);
-	SendPrompt(user);
 }
 void Manager::IN_(USER* user, vector<string>& orderList)
 {

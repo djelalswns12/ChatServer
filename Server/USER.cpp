@@ -8,8 +8,17 @@ USER::USER(SOCKET socket, SOCKADDR_IN addr)
 	this->socket = socket;
 	this->state = State::auth;
 	this->addr = addr;
-	name = "";
+	this->isFin = false;
+	SetFin(false);
 	myRoom = nullptr;
+}
+void USER::SetFin(bool f)
+{
+	isFin = f;
+}
+bool USER::GetFin()
+{
+	return isFin;
 }
 void USER::SetName(string s) 
 {

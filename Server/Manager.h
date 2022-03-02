@@ -2,6 +2,7 @@
 #pragma comment( lib, "ws2_32.lib")
 #pragma warning(disable:4996)
 #define _CRT_SECURE_NO_WARNINGS
+
 #include <iostream>
 #include <tchar.h>
 #include <locale.h>
@@ -13,15 +14,24 @@
 #include <ctime>
 #include "USER.h"
 #include "ROOM.h"
+#include "DataParse.h"
+
 using namespace std;
+
 const int PACKET_SIZE{ 1024 };
+enum class State;
 class USER;
 class ROOM;
+typedef void (Manager::* OrderFunc)(USER*, vector<string>&);
 class Manager
 {
 private:
 
 public:
+
+	map<string, OrderFunc> OrderFuncs;
+	vector<OrderFunc> OrderFuncsList{ &Manager::H,&Manager::H_,&Manager::US,&Manager::LT,&Manager::J,&Manager::O,&Manager::TO,&Manager::ST,&Manager::PF,&Manager::Login,&Manager::Q,&Manager::IN_,&Manager::X};
+	DataParse DB;
 	SOCKET ServerSocket;
 	WSADATA soData;//현재 이 소켓프로그래밍에서 사용할 소켓정보
 	SOCKADDR_IN soAddr; // 서버 IP , PORT 구조체
@@ -32,16 +42,15 @@ public:
 
 	string GetNowTime();
 	vector<string> split(string, string);
-	vector<string> split(string, string,int);
+	vector<string> split(string, string, int);
 	bool isNumber(string);
-	void ServerON();
+	void ServerON(string);
 	void InitSocket();
 	void CreateSocket();
 	void SetSocketInfo();
 	void Bind();
 	void Listen();
 
-	void SendMsg(SOCKET&, const char);
 	void DisConnectRoom(SOCKET*);
 	void DisConnect(SOCKET*);
 
@@ -60,9 +69,16 @@ public:
 	void ST(USER*, vector<string>&);
 	void PF(USER*, vector<string>&);
 	void Q(USER*, vector<string>&);
+	void X(USER*, vector<string>&);
 	void IN_(USER*, vector<string>&);
-
 	void Chat(USER*, vector<string>&);
+	void SetOrder(vector<pair<string, string>> data)
+	{
+		for (auto v : data) {
+			OrderFuncs.insert(make_pair(v.first, OrderFuncsList[stoi(v.second)]));
+		}
+	}
+	bool ExcuteOrder(USER*, vector<string>&);
 	//void X(USER*, vector<string>&);
 };
 
