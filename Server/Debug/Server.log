@@ -1,6 +1,7 @@
 ﻿  Server.cpp
-C:\Users\kim\Desktop\ChatServer\Server\Server.cpp(178,16): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
-C:\Users\kim\Desktop\ChatServer\Server\Server.cpp(226,20): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
-C:\Users\kim\Desktop\ChatServer\Server\Server.cpp(286,21): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
-C:\Users\kim\Desktop\ChatServer\Server\Server.cpp(364,29): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
+C:\Users\kim\Desktop\ChatServer\Server\Server.cpp(117,23): warning C4018: '>=': signed 또는 unsigned가 일치하지 않습니다.
+C:\Users\kim\Desktop\ChatServer\Server\Server.cpp(208,16): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
+C:\Users\kim\Desktop\ChatServer\Server\Server.cpp(261,20): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
+C:\Users\kim\Desktop\ChatServer\Server\Server.cpp(321,21): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
+C:\Users\kim\Desktop\ChatServer\Server\Server.cpp(398,29): warning C4018: '<': signed 또는 unsigned가 일치하지 않습니다.
   Server.vcxproj -> C:\Users\kim\Desktop\ChatServer\Debug\Server.exe

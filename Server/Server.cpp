@@ -1,6 +1,5 @@
 ﻿#pragma comment( lib, "ws2_32.lib")
 
-#define PACKET_SIZE 1024
 #pragma warning(disable:4996)
 #define _CRT_SECURE_NO_WARNINGS
 #include <iostream>
@@ -11,6 +10,8 @@
 #include <set>
 #include <vector>
 #include <string>
+#include <ctime>
+
 
 using namespace std;
 
@@ -26,7 +27,7 @@ enum class State
 //////////////////////////////////////////////////////////////
 class USER;
 class ROOM;
-
+string GetNowTime();
 class USER {
 private:
 	string name;
@@ -47,6 +48,7 @@ public:
 		this->state = State::auth;
 		this->addr = addr;
 		name = "";
+		myRoom = nullptr;
 	}
 	void SetName(string s) {
 		name = s;
@@ -67,12 +69,16 @@ public:
 		return this->state;
 	}
 	void SetmyRoom(ROOM* room) {
+		joinTime = GetNowTime();
+		cout << "USERJOINTIME" + joinTime;
 		myRoom = room;
 	}
 	ROOM* GetmyRoom() {
 		return myRoom;
 	}
-	
+	string GetJoinTime() {
+		return joinTime;
+	}
 	bool operator < (const USER& ref) const {
 		return name<ref.name;
 	}
@@ -97,6 +103,7 @@ public:
 		this->name = name;
 		this->owner = owner;
 		this->openTime = openTime;
+
 		this->maxCnt = maxCnt;
 		SetOpen(true);
 	}
@@ -106,17 +113,28 @@ public:
 	bool GetOpen() {
 		return isOpen;
 	}
+	bool isFull() {
+		return users.size() >= maxCnt;
+	}
+	int GetUsersSize() {
+		return users.size();
+	}
+	int GetMaxCnt() {
+		return maxCnt;
+	}
 	void SetUser(USER* user) {
 		users.insert(user);
 		user->SetmyRoom(this);
 		user->SetState(State::room);
-
 	}
 	set<USER*> GetUsers() {
 		return users;
 	}
 	string GetName() {
 		return name;
+	}
+	string GetOpenTime() {
+		return openTime;
 	}
 	void DisConnectUser(USER *u) {
 		users.erase(u);
@@ -128,7 +146,7 @@ public:
 //////////////////////////////////////////////////////////////
 //////////					변수				//////////////
 //////////////////////////////////////////////////////////////
-SOCKET ServerSocket;
+
 
 //유저 관련
 map<SOCKET, USER*> UserList;
@@ -136,7 +154,7 @@ map<string, USER*> NameList;
 
 //룸 관련
 vector<ROOM> RoomList(100);
-
+const int PACKET_SIZE{ 1024 };
 
 
 //////////////////////////////////////////////////////////////
@@ -167,7 +185,19 @@ bool isNumber(string s) {
 	}
 	return true;
 }
+string GetNowTime() {
+	time_t timer = time(NULL);
+	struct tm* t = localtime(&timer);
+	string hour = to_string(t->tm_hour);
+	string min = to_string(t->tm_min);
+	string sec = to_string(t->tm_sec);
 
+	hour = hour.length() < 2 ? "0" + hour : hour;
+	min = min.length() < 2 ? "0" + min : min;
+	sec = sec.length() < 2 ? "0" + sec : sec;
+
+	return  hour + ":" + min + ":" + sec;
+}
 //////////////////////////////////////////////////////////////
 //////////				서버 관련 함수			//////////////
 //////////////////////////////////////////////////////////////
@@ -189,7 +219,12 @@ char* AssembleBuffer(vector<char>* str) {
 void SendMsg(SOCKET& socket, const char c[]) {
 	send(socket, c, strlen(c), 0);
 }
-
+void OnDisConnectRoom(SOCKET* tmp) {
+	if (UserList.at(*tmp)->GetmyRoom() != nullptr) {
+		UserList.at(*tmp)->GetmyRoom()->DisConnectUser(UserList.at(*tmp));
+		UserList.at(*tmp)->SetmyRoom(nullptr);
+	}
+}
 
 void OnDisConnect(SOCKET* tmp) {
 	OnDisConnectRoom(tmp);
@@ -198,9 +233,7 @@ void OnDisConnect(SOCKET* tmp) {
 	closesocket(*tmp);
 	//cout << UserList.size() << "\n";
 }
-void OnDisConnectRoom(SOCKET* tmp) {
-	UserList.at(*tmp)->GetmyRoom()->DisConnectUser(UserList.at(*tmp));
-}
+
 void Login(USER *user, string name) {
 	/*
 	닉네임 설정 후
@@ -238,7 +271,7 @@ int FindEmptyRoomIdx() {
 
 int main()
 {
-
+	SOCKET ServerSocket;
 	WSADATA soData;//현재 이 소켓프로그래밍에서 사용할 소켓정보
 	SOCKADDR_IN soAddr; // 서버 IP , PORT 구조체
 
@@ -363,14 +396,36 @@ int main()
 										}
 										string s = "-----------------------------------------------------\r\n";
 										for (int i = 0; i < openRoomIdx.size(); i++) {
-											s+= to_string(openRoomIdx[i]+1)+"번:"+RoomList[openRoomIdx[i]].GetName()+"\r\n";
+											s+= "[\t"+to_string(openRoomIdx[i]+1)+"]: ("+to_string(RoomList[openRoomIdx[i]].GetUsersSize())+ "/"+to_string(RoomList[openRoomIdx[i]].GetMaxCnt())+") "+RoomList[openRoomIdx[i]].GetName()+"\r\n";
 										}
 										s+= "-----------------------------------------------------\r\n";
 										SendMsg(UserList[read.fd_array[i]]->socket, s.c_str());
 									}
 									else if (orderList[0] == "ST")
 									{
-										
+										//** 올바른 사용법은 ST [방번호] 입니다.  
+										//**존재하지 않는 대화방입니다.
+										if (orderList.size() > 1 && isNumber(orderList[1])) {
+											int roomIdx = stoi(orderList[1]) - 1;
+											if (RoomList[roomIdx].GetOpen()) {
+												string s = "-----------------------------------------------------\r\n";
+												//룸 정보
+												s += "[\t" + to_string(roomIdx + 1) + "]: (" + to_string(RoomList[roomIdx].GetUsersSize()) + "/" + to_string(RoomList[roomIdx].GetMaxCnt()) + ") " + RoomList[roomIdx].GetName() + "\r\n";
+												s += " 개설시간: " + RoomList[roomIdx].GetOpenTime() + "\r\n";
+												for (USER* u : RoomList[roomIdx].GetUsers()) {
+													s += " 참여자: " + u->GetName()+"\t"+"참여시간: "+u->GetJoinTime()+"\r\n";
+												}
+												//참여자 정보
+												s += "-----------------------------------------------------\r\n";
+												SendMsg(UserList[read.fd_array[i]]->socket, s.c_str());
+											}
+											else {
+												SendMsg(UserList[read.fd_array[i]]->socket, "**존재하지 않는 대화방입니다.\r\n");
+											}
+										}
+										else {
+											SendMsg(UserList[read.fd_array[i]]->socket, "** 올바른 사용법은 ST [방번호] 입니다.\r\n");
+										}
 									}
 									else if (orderList[0] == "PF")
 									{
@@ -396,7 +451,7 @@ int main()
 											if (isNumber(orderList[1]) == true && stoi(orderList[1]) >= 2) {
 												if (orderList.size() > 2 && orderList[2].length() > 2) {
 													ROOM* room= &RoomList[FindEmptyRoomIdx()];
-													room->SetROOM(orderList[2], UserList[read.fd_array[i]]->GetName(), "2022-02-22", stoi(orderList[1]));
+													room->SetROOM(orderList[2], UserList[read.fd_array[i]]->GetName(), GetNowTime(), stoi(orderList[1]));
 													room->SetUser(UserList[read.fd_array[i]]);
 													string s = "대화방이 개설되었습니다.\r\n" + UserList[read.fd_array[i]]->GetName() + "님이 입장했습니다.\r\n";
 													SendMsg(UserList[read.fd_array[i]]->socket,s.c_str());
@@ -421,10 +476,15 @@ int main()
 										if (orderList.size() > 1)
 										{
 											if (isNumber(orderList[1]) && RoomList[stoi(orderList[1])-1].GetOpen()) {
-												RoomList[stoi(orderList[1])-1].SetUser(UserList[read.fd_array[i]]);
-												string s = UserList[read.fd_array[i]]->GetName() + "님이 입장했습니다.\r\n";
-												for (USER* u : UserList[read.fd_array[i]]->GetmyRoom()->GetUsers()) {
-													SendMsg(u->socket, s.c_str());
+												if (RoomList[stoi(orderList[1]) - 1].isFull() == false) {
+													RoomList[stoi(orderList[1]) - 1].SetUser(UserList[read.fd_array[i]]);
+													string s = UserList[read.fd_array[i]]->GetName() + "님이 입장했습니다.\r\n";
+													for (USER* u : UserList[read.fd_array[i]]->GetmyRoom()->GetUsers()) {
+														SendMsg(u->socket, s.c_str());
+													}
+												}
+												else {
+													SendMsg(UserList[read.fd_array[i]]->socket, "** 인원이 꽉차서 참여할 수 없습니다.\r\n");
 												}
 											}
 											else {
