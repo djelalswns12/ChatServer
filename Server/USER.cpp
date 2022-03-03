@@ -3,87 +3,102 @@
 USER::USER() {
 
 }
-USER::USER(SOCKET socket, SOCKADDR_IN addr) 
+USER::USER(SOCKET socket, SOCKADDR_IN addr)
 {
 	this->socket = socket;
 	this->state = State::auth;
 	this->addr = addr;
-	this->isFin = false;
+	this->IsFin = false;
 	SetFin(false);
-	myRoom = nullptr;
+	MyRoom = nullptr;
 }
 void USER::SetFin(bool f)
 {
-	isFin = f;
+	IsFin = f;
 }
 bool USER::GetFin()
 {
-	return isFin;
+	return IsFin;
 }
-void USER::SetName(string s) 
+void USER::SetName(string s)
 {
-	name = s;
+	Name = s;
 }
-string USER::GetName() 
+string USER::GetName()
 {
-	return name;
+	return Name;
 }
-void USER::SetState(State st) 
+void USER::SetState(State st)
 {
 	this->state = st;
 }
-char* USER::GetIP() 
+char* USER::GetIP()
 {
 	return inet_ntoa(addr.sin_addr);
 }
-short USER::GetPort() 
+short USER::GetPort()
 {
 	return ntohs(addr.sin_port);
 }
-State USER::GetState() 
+State USER::GetState()
 {
 	return this->state;
 }
-void USER::SetmyRoom(ROOM* room,string jointime) 
+void USER::SetmyRoom(ROOM* room, string jointime)
 {
-	this->joinTime = jointime;
-	myRoom = room;
+	this->JoinTime = jointime;
+	MyRoom = room;
 }
-ROOM* USER::GetmyRoom() 
+ROOM* USER::GetmyRoom()
 {
-	return myRoom;
+	return MyRoom;
 }
-string USER::GetJoinTime() 
+string USER::GetJoinTime()
 {
-	return joinTime;
+	return JoinTime;
 }
-void USER::SendMsg(const char c[]) 
+void USER::SendMsg(const char c[])
 {
 	send(this->socket, c, strlen(c), 0);
 }
-void USER::SendMsg(const string s) 
+void USER::SendMsg(const string s)
 {
 	send(this->socket, s.c_str(), s.length(), 0);
 }
-bool USER::operator < (const USER& ref) const 
+bool USER::operator < (const USER& ref) const
 {
-	return name < ref.name;
+	return Name < ref.Name;
 }
-bool USER::CatchOrder(char *c) 
+bool USER::CatchOrder(char* c)
 {
 	return (buffer.size() > 0 && *(buffer.end() - 1) == '\r' && *c == '\n');
 }
-char* USER::AssembleBuffer() 
+char* USER::AssembleBuffer()
 {
-	char* out;
-	char data[PACKET_SIZE];
+	char* out = new char[buffer.size()];
+	string s = "";
+	char data[PACKET_SIZE + 1];
 	int i;
-	for (i = 0; i < buffer.size() - 1; i++) {
-		data[i] = *(buffer.begin() + i);
+	int p = 0;
+	for (int cnt = 0; cnt < ((buffer.size() - 1) / PACKET_SIZE) + 1; cnt++)
+	{
+		//PACKET_SIZE를 넘는 버퍼에 대한 처리
+		int size = buffer.size() - 1;
+		if ((buffer.size() - 1) < (cnt + 1) * PACKET_SIZE)
+		{
+			size = (buffer.size()-1) % PACKET_SIZE;
+		}
+		else
+		{
+			size = PACKET_SIZE;
+		}
+		for (i = 0; i < size; i++)
+		{
+			data[i] = *(buffer.begin() + i);
+		}
+		data[size] = '\0';
+		memcpy(out + p, data, strlen(data) + 1);
+		p += strlen(data);
 	}
-	//명령어 확인
-	out = new char[i + 1];
-	out[i] = '\0';
-	memcpy(out, data, i);
 	return out;
 }

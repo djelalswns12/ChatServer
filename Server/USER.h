@@ -23,11 +23,11 @@ class Manager;
 class ROOM;
 class USER {
 private:
-	bool isFin;
-	string name;
-	string joinTime;
+	bool IsFin;
+	string Name;
+	string JoinTime;
+	ROOM* MyRoom;
 	State state;
-	ROOM* myRoom;
 
 public:
 	SOCKET socket;

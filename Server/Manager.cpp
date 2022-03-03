@@ -1,11 +1,14 @@
 #include "Manager.h"
-bool Manager::ExcuteOrder(USER* u, vector<string>& vec) {
+bool Manager::ExcuteOrder(USER* u, vector<string>& vec) 
+{
 	if (vec.size() <= 0)
 	{
 		return false;
 	}
-	if (stoi(DB.GetData(vec[0], "state")) == (int)(u->GetState())) {
-		if (OrderFuncs.find(vec[0]) != OrderFuncs.end()) {
+	if (stoi(DB.GetData(vec[0], "state")) == (int)(u->GetState())) 
+	{
+		if (OrderFuncs.find(vec[0]) != OrderFuncs.end()) 
+		{
 			(this->*(Manager::OrderFuncs[vec[0]]))(u, vec);
 			return true;
 		}
@@ -27,13 +30,16 @@ string Manager::GetNowTime()
 	return  hour + ":" + min + ":" + sec;
 }
 
-vector<string> Manager::split(string ids, string target, int cnt) {
+vector<string> Manager::Split(string ids, string target, int cnt) 
+{
 	vector<string> names;
 	size_t cur, pre = 0;
 	cur = ids.find(target);
-	while (cur != string::npos) {
+	while (cur != string::npos) 
+	{
 		string substring = ids.substr(pre, cur - pre);
-		if (substring.length() > 0) {
+		if (substring.length() > 0) 
+		{
 			names.push_back(substring);
 			cnt--;
 		}
@@ -43,19 +49,23 @@ vector<string> Manager::split(string ids, string target, int cnt) {
 			break;
 		}
 	}
-	if (cnt > 0) {
-		if (ids.substr(pre, cur - pre).length() > 0) {
+	if (cnt > 0) 
+	{
+		if (ids.substr(pre, cur - pre).length() > 0) 
+		{
 			names.push_back(ids.substr(pre, cur - pre));
 		}
 	}
-	else {
+	else 
+	{
 		names.push_back(ids.substr(pre, ids.length() - pre));
 	}
 
 	return names;
 }
 
-vector<string> Manager::split(string ids, string target) {
+vector<string> Manager::Split(string ids, string target) 
+{
 	vector<string> names;
 	size_t cur, pre = 0;
 	cur = ids.find(target);
@@ -72,7 +82,8 @@ vector<string> Manager::split(string ids, string target) {
 	}
 	return names;
 }
-bool Manager::isNumber(string s) {
+bool Manager::IsNumber(string s) 
+{
 	for (char c : s) {
 		if (isdigit(c) == 0) {
 			return false;
@@ -81,7 +92,8 @@ bool Manager::isNumber(string s) {
 	return true;
 }
 
-void Manager::ServerON(string data) {
+void Manager::ServerON(string data) 
+{
 	DB.ReadData(data);
 	SetOrder(DB.GetOrderData());
 	InitSocket();
@@ -89,10 +101,10 @@ void Manager::ServerON(string data) {
 	SetSocketInfo();
 	Bind();
 	Listen();
-	RoomList = vector<ROOM>(100); // 룸사이즈 동적으로 변하게 추가 예정
 }
 void Manager::InitSocket() {
-	if (WSAStartup(MAKEWORD(2, 2), &soData) != 0) {
+	if (WSAStartup(MAKEWORD(2, 2), &SocketData) != 0) 
+	{
 		cout << "소켓 정보 로드 실패";
 	}
 }
@@ -104,35 +116,46 @@ void Manager::CreateSocket() {
 		cout << "소켓 생성 실패\n";
 	}
 }
-void Manager::SetSocketInfo() {
+void Manager::SetSocketInfo() 
+{
 	//_serverAddr세팅
-	memset(&soAddr, 0, sizeof(soAddr));
-	soAddr.sin_family = AF_INET;
-	soAddr.sin_addr.S_un.S_addr = htonl(INADDR_ANY); //IP설정
-	soAddr.sin_port = htons(_port);
+	memset(&SocketAddr, 0, sizeof(SocketAddr));
+	SocketAddr.sin_family = AF_INET;
+	SocketAddr.sin_addr.S_un.S_addr = htonl(INADDR_ANY); //IP설정
+	SocketAddr.sin_port = htons(Port);
 }
-void Manager::Bind() {
-	if (bind(ServerSocket, (SOCKADDR*)&soAddr, sizeof(soAddr)) == SOCKET_ERROR) {
+void Manager::Bind() 
+{
+	if (bind(ServerSocket, (SOCKADDR*)&SocketAddr, sizeof(SocketAddr)) == SOCKET_ERROR) 
+	{
 		cout << "소켓 바인드 실패\n";
 	}
 }
 void Manager::Listen() {
-	if (listen(ServerSocket, 5) == SOCKET_ERROR) {
+	if (listen(ServerSocket, 5) == SOCKET_ERROR) 
+	{
 		cout << "소켓 리슨 실패\n";
 	}
-	cout << "Server ON\n\n";
+	cout << " Server ON\n\n- Log\n";
 }
 void Manager::Print(string s) {
 	cout << s;
 }
+void Manager::SetOrder(vector<pair<string, string>> data)
+{
+	for (auto v : data) {
+		OrderFuncs.insert(make_pair(v.first, OrderFuncsList[stoi(v.second)]));
+	}
+}
 
-
-void Manager::DisConnectRoom(SOCKET* tmp) {
-
-	if (UserList.at(*tmp)->GetmyRoom() != nullptr) {
+void Manager::DisConnectRoom(SOCKET* tmp) 
+{
+	if (UserList.at(*tmp)->GetmyRoom() != nullptr) 
+	{
 		for (USER* u : UserList[*tmp]->GetmyRoom()->GetUsers())
 		{
-			if (u->socket == *tmp && u->GetFin()) {
+			if (u->socket == *tmp && u->GetFin()) 
+			{
 				continue;
 			}
 				u->SendMsg(UserList[*tmp]->GetName() + "님이 나가셨습니다\r\n");
@@ -143,7 +166,8 @@ void Manager::DisConnectRoom(SOCKET* tmp) {
 	}
 }
 
-void Manager::DisConnect(SOCKET* tmp) {
+void Manager::DisConnect(SOCKET* tmp) 
+{
 	DisConnectRoom(tmp);
 	NameList.erase(UserList.at(*tmp)->GetName());
 	UserList.erase(*tmp);
@@ -155,27 +179,29 @@ void Manager::SendPrompt(USER* user) {
 	user->SendMsg("명령어안내(H) 종료(X)\r\n");
 	user->SendMsg("선택>");
 }
-void Manager::Login(USER* user, vector<string>& orderList) {
-	if (orderList.size() > 1 && orderList[1].length() > 0) {
+void Manager::Login(USER* user, vector<string>& orderList) 
+{
+	if (orderList.size() > 1 && orderList[1].length() > 0) 
+	{
 		if (user->GetState() != State::auth) {
 			return;
 		}
-		if (NameList.find(orderList[1]) == NameList.end()) {
+		if (NameList.find(orderList[1]) == NameList.end()) 
+		{
 			user->SetName(orderList[1]);
 			NameList.insert(make_pair(orderList[1], user));
 			user->SetState(State::lobby);
 			user->SendMsg(DB.GetData(orderList[0], "comment0"));
+			return;
 		}
-		else {
-			user->SendMsg(DB.GetData(orderList[0], "comment1"));
-		}
+		user->SendMsg(DB.GetData(orderList[0], "comment1"));
+		return;
 	}
-	else {
-		user->SendMsg(DB.GetData(orderList[0], "comment0"));
+	user->SendMsg(DB.GetData(orderList[0], "comment2"));
 	}
-}
 
-int Manager::FindEmptyRoomIdx() {
+int Manager::FindEmptyRoomIdx() 
+{
 	for (int i = 0; i < RoomList.size(); i++)
 	{
 		if (RoomList[i].GetOpen() == false)
@@ -183,7 +209,8 @@ int Manager::FindEmptyRoomIdx() {
 			return i;
 		}
 	}
-	return -1;
+	RoomList.push_back(ROOM());
+	return RoomList.size()-1;
 }
 
 void Manager::US(USER* user, vector<string>& orderList) 
@@ -206,14 +233,16 @@ void Manager::LT(USER* user, vector<string>& orderList)
 {
 	vector<int> openRoomIdx;
 	int cnt = 0;
-	for (auto iter = RoomList.begin(); iter != RoomList.end(); iter++) {
+	for (auto iter = RoomList.begin(); iter != RoomList.end(); iter++) 
+	{
 		if (iter->GetOpen() == true) {
 			openRoomIdx.push_back(cnt);
 		}
 		cnt++;
 	}
 	string s = "";
-	for (int i = 0; i < openRoomIdx.size(); i++) {
+	for (int i = 0; i < openRoomIdx.size(); i++) 
+	{
 		s += DB.AssignData(DB.GetData(orderList[0], "comment0"), vector<string>{to_string(openRoomIdx[i] + 1), to_string(RoomList[openRoomIdx[i]].GetUsersSize()) , to_string(RoomList[openRoomIdx[i]].GetMaxCnt()), RoomList[openRoomIdx[i]].GetName()});
 	}
 	user->SendMsg(s.c_str());
@@ -223,11 +252,14 @@ void Manager::J(USER* user, vector<string>& orderList)
 	string s;
 	if (orderList.size() > 1)
 	{
-		if (isNumber(orderList[1]) && RoomList[stoi(orderList[1]) - 1].GetOpen()) {
-			if (RoomList[stoi(orderList[1]) - 1].isFull() == false) {
+		if (IsNumber(orderList[1]) && RoomList[stoi(orderList[1]) - 1].GetOpen()) 
+		{
+			if (RoomList[stoi(orderList[1]) - 1].isFull() == false) 
+			{
 				RoomList[stoi(orderList[1]) - 1].SetUser(user);
 				s = DB.AssignData(DB.GetData(orderList[0], "comment0"), vector<string>{user->GetName() });
-				for (USER* u : user->GetmyRoom()->GetUsers()) {
+				for (USER* u : user->GetmyRoom()->GetUsers()) 
+				{
 					u->SendMsg(s.c_str());
 				}
 				return;
@@ -251,24 +283,26 @@ void Manager::O(USER* user, vector<string>& orderList)
 	string s;
 	if (orderList.size() > 1)
 	{
-		if (isNumber(orderList[1]) == true && stoi(orderList[1]) >= 2 && stoi(orderList[1]) <= 20) {
-			if (orderList.size() > 2 && orderList[2].length() > 2) {
+		if (IsNumber(orderList[1]) == true && stoi(orderList[1]) >= 2 && stoi(orderList[1]) <= 20) 
+		{
+			if (orderList.size() > 2 && orderList[2].length() > 2) 
+			{
 				int idx = FindEmptyRoomIdx();
 				ROOM* room = &RoomList[idx];
 				room->SetROOM(orderList[2], user->GetName(), GetNowTime(), stoi(orderList[1]), idx);
 				room->SetUser(user);
-				s = "대화방이 개설되었습니다.\r\n" + user->GetName() + "님이 입장했습니다.\r\n";
+				s = DB.AssignData(DB.GetData(orderList[0], "comment0"), vector<string>{user->GetName()});
 			}
 			else {
-				s = "대화방 제목이 필요합니다.\r\n";
+				s = DB.GetData(orderList[0], "comment1");
 			}
 		}
 		else {
-			s = "대화방 인원을 2-20명 사이로 입력해주세요.\r\n";
+			s = DB.GetData(orderList[0], "comment2");
 		}
 	}
 	else {
-		s = "올바른 사용법은 O [최대인원] [방제목] 입니다.\r\n";
+		s = DB.GetData(orderList[0], "comment3");
 	}
 	user->SendMsg(s.c_str());
 }void Manager::X(USER* user, vector<string>& orderList)
@@ -288,53 +322,56 @@ void Manager::TO(USER* user, vector<string>& orderList)
 			{
 				if (orderList[1] != user->GetName())
 				{
-					s = "** 쪽지를 보냈습니다.\r\n";
+					s = DB.GetData(orderList[0], "comment0");
 					string mail;
 					mail = "\r\n# " + user->GetName() + "님의 쪽지 ==>" + orderList[2] + "\r\n";
 					NameList[orderList[1]]->SendMsg(mail.c_str());
 				}
 				else {
-					s = "** 자기 자신에게는 보낼 수 없습니다.\r\n";
+					s = DB.GetData(orderList[0], "comment1");
 				}
 			}
 			else {
-				s = "** 이용자를 찾을 수 없습니다.\r\n";
+				s = DB.GetData(orderList[0], "comment2");
 			}
 		}
 		else {
-			s = "** 메시지 내용이 없습니다.\r\n";
+			s = DB.GetData(orderList[0], "comment3");
 		}
 	}
 	else {
-		s = "** 올바른 사용법은 TO [상대방ID] [매시지] 입니다.\r\n";
+		s = DB.GetData(orderList[0], "comment4");
 	}
 	user->SendMsg(s.c_str());
 }
 void Manager::ST(USER* user, vector<string>& orderList)
 {
 	string s;
-	if (orderList.size() > 1 && isNumber(orderList[1])) {
+	if (orderList.size() > 1 && IsNumber(orderList[1])) 
+	{
 		int roomIdx = stoi(orderList[1]) - 1;
-		if (RoomList[roomIdx].GetOpen()) {
-
+		if (RoomList[roomIdx].GetOpen()) 
+		{
 			//룸 정보
 			s+= DB.AssignData(DB.GetData(orderList[0], "comment0"), vector<string>{ to_string(roomIdx + 1), to_string(RoomList[roomIdx].GetUsersSize()), to_string(RoomList[roomIdx].GetMaxCnt()), RoomList[roomIdx].GetName() });
-
 			//개설 시간
 			s +=  DB.AssignData(DB.GetData(orderList[0], "comment1"), vector<string>{RoomList[roomIdx].GetOpenTime() });
 
-			for (USER* u : RoomList[roomIdx].GetUsers()) {
+			for (USER* u : RoomList[roomIdx].GetUsers()) 
+			{
 				//참여자 정보
 				s+= DB.AssignData(DB.GetData(orderList[0], "comment2"), vector<string>{u->GetName(), u->GetJoinTime()});
 
 			}
 			s += DB.GetData(orderList[0], "comment3");
 		}
-		else {
+		else 
+		{
 			s= DB.GetData(orderList[0], "comment4");
 		}
 	}
-	else {
+	else 
+	{
 		s= DB.GetData(orderList[0], "comment5");
 	}
 
@@ -350,27 +387,25 @@ void Manager::PF(USER* user, vector<string>& orderList)
 		{
 			if (NameList[orderList[1]]->GetState() == State::lobby)
 			{
-				s = "** " + NameList[orderList[1]]->GetName() + "님은 현재 대기실에 있습니다.\r\n" + "** 접속지: " + NameList[orderList[1]]->GetIP() + ":" + to_string(NameList[orderList[1]]->GetPort()) + "\r\n";
+				s= DB.AssignData(DB.GetData(orderList[0], "comment0"), vector<string>{NameList[orderList[1]]->GetName(), NameList[orderList[1]]->GetIP(), to_string(NameList[orderList[1]]->GetPort()) });
 			}
 			else if (NameList[orderList[1]]->GetState() == State::room) {
-				s = "** " + NameList[orderList[1]]->GetName() + "님은 현재 " + to_string((NameList[orderList[1]]->GetmyRoom()->GetNumber()) + 1) + "번 방에 있습니다.\r\n" + "** 접속지: " + NameList[orderList[1]]->GetIP() + ":" + to_string(NameList[orderList[1]]->GetPort()) + "\r\n";
+				s = DB.AssignData(DB.GetData(orderList[0], "comment1"), vector<string>{ NameList[orderList[1]]->GetName(), to_string((NameList[orderList[1]]->GetmyRoom()->GetNumber()) + 1), NameList[orderList[1]]->GetIP(), to_string(NameList[orderList[1]]->GetPort()) });
 			}
-			user->SendMsg(s.c_str());
 		}
 		else
 		{
-			s = "** " + orderList[1] + "님을 찾을 수 없습니다.\r\n";
-			user->SendMsg(s.c_str());
+			s = DB.AssignData(DB.GetData(orderList[0], "comment2"), vector<string>{orderList[1]});
 		}
 	}
 	else
 	{
 		if (user->GetState() == State::lobby)
 		{
-			s = "** " + user->GetName() + "님은 현재 대기실에 있습니다.\r\n" + "** 접속지: " + user->GetIP() + ":" + to_string(user->GetPort()) + "\r\n";
+			s = DB.AssignData(DB.GetData(orderList[0], "comment0"), vector<string>{ user->GetName(), user->GetIP(), to_string(user->GetPort()) });
 		}
-		user->SendMsg(s.c_str());
 	}
+	user->SendMsg(s.c_str());
 }
 void Manager::Q(USER* user, vector<string>& orderList)
 {
@@ -385,26 +420,25 @@ void Manager::IN_(USER* user, vector<string>& orderList)
 		{
 			if (orderList[1] != user->GetName())
 			{
-				if (user->GetmyRoom() != NameList[orderList[1]]->GetmyRoom()) {
-					s = "** 초대 요청을 했습니다.\r\n";
-					string mail;
-					mail = "\r\n# " + user->GetName() + "님의 초대장이 도착했습니다.\r\n";
-					NameList[orderList[1]]->SendMsg(mail.c_str());
+				if (user->GetmyRoom() != NameList[orderList[1]]->GetmyRoom()) 
+				{
+					s = DB.GetData(orderList[0], "comment0");
+					NameList[orderList[1]]->SendMsg(DB.AssignData(DB.GetData(orderList[0], "comment5"), vector<string>{ user->GetName()}));
 				}
 				else {
-					s = "** 이미 같은 방에 있습니다.\r\n";
+					s = DB.GetData(orderList[0], "comment1");
 				}
 			}
 			else {
-				s = "** 자기 자신은 초대할 수 없습니다.\r\n";
+				s = DB.GetData(orderList[0], "comment2");
 			}
 		}
 		else {
-			s="** 이용자를 찾을 수 없습니다.\r\n";
+			s = DB.GetData(orderList[0], "comment3");
 		}
 	}
 	else {
-		s = "** 올바른 사용법은 IN [상대방ID] 입니다.\r\n";
+		s = DB.GetData(orderList[0], "comment4");
 	}
 	user->SendMsg(s.c_str());
 }

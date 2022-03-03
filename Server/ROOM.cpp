@@ -60,7 +60,8 @@ void ROOM::DisConnectUser(USER* u)
 {
 	u->SetState(State::lobby);
 	users.erase(u);
-	if (users.size() <= 0) {
+	if (users.size() <= 0) 
+	{
 		SetOpen(false);
 	}
 }

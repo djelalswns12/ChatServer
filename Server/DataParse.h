@@ -14,13 +14,13 @@ using namespace std;
 class DataParse
 {
 public:
-	Document doc;
+	Document Doc;
 	DataParse();
 	DataParse(string);
 	void ReadData(string);
 	vector<pair<string, string>> GetOrderData();
 	string GetData(string,string);
 	string AssignData(string,vector<string>);
-	vector<string> split(string, string);
+	vector<string> Split(string, string);
 };
 
