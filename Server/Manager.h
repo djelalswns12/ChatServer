@@ -12,33 +12,47 @@
 #include <vector>
 #include <string>
 #include <ctime>
+#include "DataParse.h"
 #include "USER.h"
 #include "ROOM.h"
-#include "DataParse.h"
+
 
 using namespace std;
 
 const int PACKET_SIZE{ 1024 };
 
 enum class State;
+class DataParse;
 class USER;
 class ROOM;
 
 typedef void (Manager::* OrderFunc)(USER*, vector<string>&);
 class Manager
 {
+private:
+	Manager() { }
+	Manager(const Manager& ref) {}
+	Manager& operator=(const Manager& ref) {}
+	~Manager() {}
 public:
+	static Manager& getIncetance() {
+		static Manager ins;
+		return ins;
+	}
 
-	map<string, OrderFunc> OrderFuncs;
-	vector<OrderFunc> OrderFuncsList{ &Manager::H,&Manager::H_,&Manager::US,&Manager::LT,&Manager::J,&Manager::O,&Manager::TO,&Manager::ST,&Manager::PF,&Manager::Login,&Manager::Q,&Manager::IN_,&Manager::X};
-	DataParse DB;
 	SOCKET ServerSocket;
 	WSADATA SocketData;//현재 이 소켓프로그래밍에서 사용할 소켓정보
 	SOCKADDR_IN SocketAddr; // 서버 IP , PORT 구조체
 	short Port = 4444;
+
 	map<SOCKET, USER*> UserList;
 	map<string, USER*> NameList;
 	vector<ROOM> RoomList;
+
+	DataParse* DB;
+
+	map<string, OrderFunc> OrderFuncs;
+	vector<OrderFunc> OrderFuncsList{ &Manager::H,&Manager::H_,&Manager::US,&Manager::LT,&Manager::J,&Manager::O,&Manager::TO,&Manager::ST,&Manager::PF,&Manager::Login,&Manager::Q,&Manager::IN_,&Manager::X };
 
 	string GetNowTime();
 	vector<string> Split(string, string);

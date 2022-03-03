@@ -5,10 +5,10 @@
 
 
 using namespace std;
-
+	
 int main()
 {
-	Manager m;
+	Manager& m = Manager::getIncetance();
 	m.ServerON("Data.json");
 
 	fd_set read, tmp;
@@ -68,12 +68,11 @@ int main()
 						//엔터 입력시
 						//버퍼 결합
 						char* msg = m.UserList[read.fd_array[i]]->AssembleBuffer();
-						
 						m.Print(string(m.UserList[read.fd_array[i]]->GetIP()) + ":" + to_string(m.UserList[read.fd_array[i]]->GetPort()) + " [" + m.UserList[read.fd_array[i]]->GetName() + "]" + ":" + msg + "\r\n");
 						
 						string msgString(msg);
-
 						vector<string> orderList = m.Split(msgString, " ", 2);
+
 						bool order = m.ExcuteOrder(m.UserList[read.fd_array[i]], orderList);
 						switch (m.UserList[read.fd_array[i]]->GetState())
 						{
@@ -109,7 +108,7 @@ int main()
 						}
 						//버퍼 비우기
 						delete msg;
-						m.UserList[read.fd_array[i]]->buffer.clear();
+						m.UserList[read.fd_array[i]]->Buffer.clear();
 
 						//소켓 종료 요청 확인
 						if (m.UserList[read.fd_array[i]]->GetFin()) 
@@ -122,7 +121,7 @@ int main()
 					else
 					{
 						//명령어 수집
-						m.UserList[read.fd_array[i]]->buffer.push_back(c);
+						m.UserList[read.fd_array[i]]->Buffer.push_back(c);
 					}
 				}
 			}

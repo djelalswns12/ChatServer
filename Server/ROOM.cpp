@@ -2,65 +2,65 @@
 
 ROOM::ROOM()
 {
-	number = -1;
+	RoomIdx = -1;
 	SetOpen(false);
 }
 
-void ROOM::SetROOM(string name, string owner, string openTime, int maxCnt, int idx)
+void ROOM::SetRoom(string name, string owner, string openTime, int maxCnt, int idx)
 {
-	this->name = name;
-	this->owner = owner;
-	this->openTime = openTime;
-	this->maxCnt = maxCnt;
+	this->Name = name;
+	this->Owner = owner;
+	this->OpenTime = openTime;
+	this->MaxCnt = maxCnt;
 	SetNumber(idx);
 	SetOpen(true);
 }
 void ROOM::SetNumber(int n)
 {
-	number = n;
+	RoomIdx = n;
 }
 int ROOM::GetNumber() {
-	return number;
+	return RoomIdx;
 }
 void ROOM::SetOpen(bool state)
 {
-	isOpen = state;
+	IsOpen = state;
 }
 bool ROOM::GetOpen()
 {
-	return isOpen;
+	return IsOpen;
 }
-bool ROOM::isFull() {
-	return users.size() >= maxCnt;
+bool ROOM::IsFull() {
+	return Users.size() >= MaxCnt;
 }
 int ROOM::GetUsersSize()
 {
-	return users.size();
+	return Users.size();
 }
 int ROOM::GetMaxCnt() {
-	return maxCnt;
+	return MaxCnt;
 }
 void ROOM::SetUser(USER* user)
 {
-	users.insert(user);
-	user->SetmyRoom(this, m->GetNowTime());
+	Users.insert(user);
+	user->SetmyRoom(this, Manager::getIncetance().GetNowTime());
 	user->SetState(State::room);
 }
 set<USER*> ROOM::GetUsers()
 {
-	return users;
+	return Users;
 }
 string ROOM::GetName() {
-	return name;
+	return Name;
 }
 string ROOM::GetOpenTime() {
-	return openTime;
+	return OpenTime;
 }
 void ROOM::DisConnectUser(USER* u)
 {
 	u->SetState(State::lobby);
-	users.erase(u);
-	if (users.size() <= 0) 
+	Users.erase(u);
+	if (Users.size() <= 0) 
 	{
 		SetOpen(false);
 	}

@@ -30,26 +30,34 @@ private:
 	State state;
 
 public:
-	SOCKET socket;
-	vector<char> buffer;
-	SOCKADDR_IN addr;
+	SOCKET Socket;
+	vector<char> Buffer;
+	SOCKADDR_IN Addr;
 
 	USER();
 	USER(SOCKET, SOCKADDR_IN);
+
 	void SetName(string);
 	string GetName();
-	void SetState(State);
+
 	char* GetIP();
 	short GetPort();
+
 	State GetState();
-	void SetmyRoom(ROOM*,string);
-	ROOM* GetmyRoom();
+	void SetState(State);
+
+	bool GetFin();
+	void SetFin(bool);
+
 	string GetJoinTime();
+
+	ROOM* GetmyRoom();
+	void SetmyRoom(ROOM*,string);
+
 	bool operator < (const USER&) const;
 	void SendMsg(const char c[]);
 	void SendMsg(const string s);
 	bool CatchOrder(char*);
 	char* AssembleBuffer();
-	bool GetFin();
-	void SetFin(bool);
+
 };

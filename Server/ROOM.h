@@ -19,28 +19,31 @@ class USER;
 class Manager;
 class ROOM {
 private:
-	Manager* m;
-	bool isOpen;
-	string name;
-	string owner;
-	string openTime;
-	int maxCnt;
-	int number;
-	set<USER*> users;
+	set<USER*> Users;
+	int RoomIdx;
+	string Name;
+	bool IsOpen;
+	string Owner;
+	string OpenTime;
+	int MaxCnt;
+
+
 public:
 	ROOM();
+	void SetRoom(string name, string owner, string openTime, int maxCnt, int idx);
+	void SetUser(USER* user);
+	set<USER*> GetUsers();
+	void DisConnectUser(USER* u);
 
-	void SetROOM(string name, string owner, string openTime, int maxCnt, int idx);
 	void SetNumber(int n);
 	int GetNumber();
 	void SetOpen(bool state);
 	bool GetOpen();
-	bool isFull();
+	bool IsFull();
 	int GetUsersSize();
 	int GetMaxCnt();
-	void SetUser(USER* user);
-	set<USER*> GetUsers();
+
 	string GetName();
 	string GetOpenTime();
-	void DisConnectUser(USER* u);
+
 };
