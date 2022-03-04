@@ -7,7 +7,7 @@ USER::USER()
 USER::USER(SOCKET socket, SOCKADDR_IN addr)
 {
 	this->Socket = socket;
-	this->state = State::auth;
+	this->state = EState::Auth;
 	this->Addr = addr;
 	SetFin(false);
 	MyRoom = nullptr;
@@ -28,7 +28,7 @@ string USER::GetName()
 {
 	return Name;
 }
-void USER::SetState(State st)
+void USER::SetState(EState st)
 {
 	this->state = st;
 }
@@ -40,7 +40,7 @@ short USER::GetPort()
 {
 	return ntohs(Addr.sin_port);
 }
-State USER::GetState()
+EState USER::GetState()
 {
 	return this->state;
 }

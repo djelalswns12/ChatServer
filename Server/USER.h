@@ -13,11 +13,11 @@
 #include <ctime>
 #include "Manager.h"
 using namespace std;
-enum class State
+enum class EState
 {
-	auth,
-	lobby,
-	room
+	Auth,
+	Lobby,
+	Room,
 };
 class Manager;
 class ROOM;
@@ -28,7 +28,7 @@ private:
 	string Name;
 	string JoinTime;
 	ROOM* MyRoom;
-	State state;
+	EState state;
 
 public:
 	SOCKET Socket;
@@ -44,8 +44,8 @@ public:
 	char* GetIP();
 	short GetPort();
 
-	State GetState();
-	void SetState(State);
+	EState GetState();
+	void SetState(EState);
 
 	bool GetFin();
 	void SetFin(bool);

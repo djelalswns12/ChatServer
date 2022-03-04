@@ -8,6 +8,7 @@ using namespace std;
 	
 int main()
 {
+	SOCKET* targetSocket;
 	Manager& m = Manager::getIncetance();
 	m.ServerON("Data.json");
 
@@ -33,11 +34,12 @@ int main()
 		}
 		for (int i = 0; i < read.fd_count; i++)
 		{
-			if (!FD_ISSET(read.fd_array[i], &tmp))
+			targetSocket = &read.fd_array[i];
+			if (!FD_ISSET(*targetSocket, &tmp))
 			{
 				continue;
 			}
-			if (m.ServerSocket == read.fd_array[i])
+			if (m.ServerSocket == *targetSocket)
 			{
 				SOCKADDR_IN clientAddr;
 				int size = sizeof(clientAddr);
@@ -53,53 +55,53 @@ int main()
 			else
 			{
 				char c;
-				int len = recv(read.fd_array[i], &c, sizeof(char), 0);
+				int len = recv(*targetSocket, &c, sizeof(char), 0);
 				if (0 == len)
 				{
 					//연결 종료
-					printf("[%d] LogOut\n", read.fd_array[i]);
-					FD_CLR(read.fd_array[i], &read);
+					printf("[%d] is Disconneted\n", *targetSocket);
+					FD_CLR(*targetSocket, &read);
 					m.DisConnect(&tmp.fd_array[i]);
 				}
 				else
 				{
-					if (m.UserList.at(read.fd_array[i])->CatchOrder(&c))
+					if (m.UserList.at(*targetSocket)->CatchOrder(&c))
 					{
 						//엔터 입력시
 						//버퍼 결합
-						char* msg = m.UserList[read.fd_array[i]]->AssembleBuffer();
-						m.Print(string(m.UserList[read.fd_array[i]]->GetIP()) + ":" + to_string(m.UserList[read.fd_array[i]]->GetPort()) + " [" + m.UserList[read.fd_array[i]]->GetName() + "]" + ":" + msg + "\r\n");
+						char* msg = m.UserList[*targetSocket]->AssembleBuffer();
+						m.Print(string(m.UserList[*targetSocket]->GetIP()) + ":" + to_string(m.UserList[*targetSocket]->GetPort()) + " [" + m.UserList[*targetSocket]->GetName() + "]" + ":" + msg + "\r\n");
 						
 						string msgString(msg);
 						vector<string> orderList = m.Split(msgString, " ", 2);
 
-						bool order = m.ExcuteOrder(m.UserList[read.fd_array[i]], orderList);
-						switch (m.UserList[read.fd_array[i]]->GetState())
+						bool order = m.ExcuteOrder(m.UserList[*targetSocket], orderList);
+						switch (m.UserList[*targetSocket]->GetState())
 						{
-						case State::auth:
+						case EState::Auth:
 							if (!order) 
 							{
-								if (m.UserList[read.fd_array[i]]->GetState() == State::auth)
+								if (m.UserList[*targetSocket]->GetState() == EState::Auth)
 								{
-									m.UserList[read.fd_array[i]]->SendMsg("**로그인 명령어(LOGIN)를 사용해주세요.\r\n");
+									m.UserList[*targetSocket]->SendMsg("**로그인 명령어(LOGIN)를 사용해주세요.\r\n");
 								}
 							}
 							break;
 
-						case State::lobby:
-							if (m.UserList[read.fd_array[i]]->GetState() == State::lobby)
+						case EState::Lobby:
+							if (m.UserList[*targetSocket]->GetState() == EState::Lobby)
 							{
 								//입력창 출력
-								m.SendPrompt(m.UserList[read.fd_array[i]]);
+								m.SendPrompt(m.UserList[*targetSocket]);
 							}
 							break;
 
-						case State::room:
+						case EState::Room:
 							//룸 전체에게 채팅 보내기
 							if (!order) {
-								for (USER* u : m.UserList[read.fd_array[i]]->GetmyRoom()->GetUsers())
+								for (USER* u : m.UserList[*targetSocket]->GetmyRoom()->GetUsers())
 								{
-									u->SendMsg(m.UserList[read.fd_array[i]]->GetName() + ">" + msgString + "\r\n");
+									u->SendMsg(m.UserList[*targetSocket]->GetName() + ">" + msgString + "\r\n");
 								}
 							}
 							break;
@@ -108,12 +110,12 @@ int main()
 						}
 						//버퍼 비우기
 						delete msg;
-						m.UserList[read.fd_array[i]]->Buffer.clear();
+						m.UserList[*targetSocket]->Buffer.clear();
 
 						//소켓 종료 요청 확인
-						if (m.UserList[read.fd_array[i]]->GetFin()) 
+						if (m.UserList[*targetSocket]->GetFin()) 
 						{
-							FD_CLR(read.fd_array[i], &read);
+							FD_CLR(*targetSocket, &read);
 							m.DisConnect(&tmp.fd_array[i]);
 							continue;
 						}
@@ -121,7 +123,7 @@ int main()
 					else
 					{
 						//명령어 수집
-						m.UserList[read.fd_array[i]]->Buffer.push_back(c);
+						m.UserList[*targetSocket]->Buffer.push_back(c);
 					}
 				}
 			}

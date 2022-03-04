@@ -47,7 +47,7 @@ void ROOM::SetUser(USER* user)
 {
 	Users.insert(user);
 	user->SetmyRoom(this, Manager::getIncetance().GetNowTime());
-	user->SetState(State::room);
+	user->SetState(EState::Room);
 }
 set<USER*> ROOM::GetUsers()
 {
@@ -63,7 +63,7 @@ string ROOM::GetOpenTime()
 }
 void ROOM::DisConnectUser(USER* u)
 {
-	u->SetState(State::lobby);
+	u->SetState(EState::Lobby);
 	Users.erase(u);
 	if (Users.size() <= 0) 
 	{

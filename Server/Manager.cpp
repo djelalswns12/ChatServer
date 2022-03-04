@@ -181,6 +181,7 @@ void Manager::DisConnect(SOCKET* tmp)
 	UserList.erase(*tmp);
 	shutdown(*tmp, SD_BOTH);
 	closesocket(*tmp);
+	delete tmp;
 	//cout << UserList.size() << "\n";
 }
 void Manager::SendPrompt(USER* user) {
@@ -191,7 +192,7 @@ void Manager::Login(USER* user, vector<string>& orderList)
 {
 	if (orderList.size() > 1 && orderList[1].length() > 0) 
 	{
-		if (user->GetState() != State::auth) 
+		if (user->GetState() != EState::Auth) 
 		{
 			return;
 		}
@@ -199,7 +200,7 @@ void Manager::Login(USER* user, vector<string>& orderList)
 		{
 			user->SetName(orderList[1]);
 			NameList.insert(make_pair(orderList[1], user));
-			user->SetState(State::lobby);
+			user->SetState(EState::Lobby);
 			user->SendMsg(DB->GetData(orderList[0], "comment0"));
 			return;
 		}
@@ -409,11 +410,11 @@ void Manager::PF(USER* user, vector<string>& orderList)
 	if (orderList.size() > 1) {
 		if (NameList.find(orderList[1]) != NameList.end())
 		{
-			if (NameList[orderList[1]]->GetState() == State::lobby)
+			if (NameList[orderList[1]]->GetState() == EState::Lobby)
 			{
 				s= DB->AssignData(DB->GetData(orderList[0], "comment0"), vector<string>{NameList[orderList[1]]->GetName(), NameList[orderList[1]]->GetIP(), to_string(NameList[orderList[1]]->GetPort()) });
 			}
-			else if (NameList[orderList[1]]->GetState() == State::room) {
+			else if (NameList[orderList[1]]->GetState() == EState::Room) {
 				s = DB->AssignData(DB->GetData(orderList[0], "comment1"), vector<string>{ NameList[orderList[1]]->GetName(), to_string((NameList[orderList[1]]->GetmyRoom()->GetNumber()) + 1), NameList[orderList[1]]->GetIP(), to_string(NameList[orderList[1]]->GetPort()) });
 			}
 		}
@@ -424,7 +425,7 @@ void Manager::PF(USER* user, vector<string>& orderList)
 	}
 	else
 	{
-		if (user->GetState() == State::lobby)
+		if (user->GetState() == EState::Lobby)
 		{
 			s = DB->AssignData(DB->GetData(orderList[0], "comment0"), vector<string>{ user->GetName(), user->GetIP(), to_string(user->GetPort()) });
 		}

@@ -21,7 +21,7 @@ using namespace std;
 
 const int PACKET_SIZE{ 1024 };
 
-enum class State;
+enum class EState;
 class DataParse;
 class USER;
 class ROOM;
