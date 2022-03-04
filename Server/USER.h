@@ -21,7 +21,8 @@ enum class State
 };
 class Manager;
 class ROOM;
-class USER {
+class USER 
+{
 private:
 	bool IsFin;
 	string Name;

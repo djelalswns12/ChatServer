@@ -35,7 +35,8 @@ private:
 	Manager& operator=(const Manager& ref) {}
 	~Manager() {}
 public:
-	static Manager& getIncetance() {
+	static Manager& getIncetance() 
+	{
 		static Manager ins;
 		return ins;
 	}

@@ -1,6 +1,7 @@
 #include "USER.h"
 
-USER::USER() {
+USER::USER() 
+{
 
 }
 USER::USER(SOCKET socket, SOCKADDR_IN addr)

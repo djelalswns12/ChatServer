@@ -17,7 +17,8 @@
 using namespace std;
 class USER;
 class Manager;
-class ROOM {
+class ROOM 
+{
 private:
 	set<USER*> Users;
 	int RoomIdx;

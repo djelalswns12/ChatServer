@@ -52,8 +52,10 @@ string DataParse::AssignData(string str,vector<string> v)
 	vector<string> src= Manager::getIncetance().Split(str, "%");
 	int i = 0;
 	string data="";
-	for (string s : src) {
-		if (s == "/d") {
+	for (string s : src) 
+	{
+		if (s == "/d") 
+		{
 			s = v[i++];
 		}
 		data += s;

@@ -19,7 +19,8 @@ void ROOM::SetNumber(int n)
 {
 	RoomIdx = n;
 }
-int ROOM::GetNumber() {
+int ROOM::GetNumber() 
+{
 	return RoomIdx;
 }
 void ROOM::SetOpen(bool state)
@@ -30,14 +31,16 @@ bool ROOM::GetOpen()
 {
 	return IsOpen;
 }
-bool ROOM::IsFull() {
+bool ROOM::IsFull() 
+{
 	return Users.size() >= MaxCnt;
 }
 int ROOM::GetUsersSize()
 {
 	return Users.size();
 }
-int ROOM::GetMaxCnt() {
+int ROOM::GetMaxCnt() 
+{
 	return MaxCnt;
 }
 void ROOM::SetUser(USER* user)
@@ -50,10 +53,12 @@ set<USER*> ROOM::GetUsers()
 {
 	return Users;
 }
-string ROOM::GetName() {
+string ROOM::GetName() 
+{
 	return Name;
 }
-string ROOM::GetOpenTime() {
+string ROOM::GetOpenTime() 
+{
 	return OpenTime;
 }
 void ROOM::DisConnectUser(USER* u)

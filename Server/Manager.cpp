@@ -69,15 +69,18 @@ vector<string> Manager::Split(string ids, string target)
 	vector<string> names;
 	size_t cur, pre = 0;
 	cur = ids.find(target);
-	while (cur != string::npos) {
+	while (cur != string::npos) 
+	{
 		string substring = ids.substr(pre, cur - pre);
-		if (substring.length() > 0) {
+		if (substring.length() > 0) 
+		{
 			names.push_back(substring);
 		}
 		pre = cur + target.length();
 		cur = ids.find(target, pre);
 	}
-	if (ids.substr(pre, cur - pre).length() > 0) {
+	if (ids.substr(pre, cur - pre).length() > 0) 
+	{
 		names.push_back(ids.substr(pre, cur - pre));
 	}
 	return names;
@@ -103,17 +106,20 @@ void Manager::ServerON(string data)
 	Bind();
 	Listen();
 }
-void Manager::InitSocket() {
+void Manager::InitSocket() 
+{
 	if (WSAStartup(MAKEWORD(2, 2), &SocketData) != 0) 
 	{
 		cout << "소켓 정보 로드 실패";
 	}
 }
-void Manager::CreateSocket() {
+void Manager::CreateSocket() 
+{
 	//PF_INET = IPV4
 	//SOCK_STREAM = TCP / IP
 	ServerSocket = socket(PF_INET, SOCK_STREAM, IPPROTO_IP);
-	if (ServerSocket == INVALID_SOCKET) {
+	if (ServerSocket == INVALID_SOCKET) 
+	{
 		cout << "소켓 생성 실패\n";
 	}
 }
@@ -144,7 +150,8 @@ void Manager::Print(string s) {
 }
 void Manager::SetOrder(vector<pair<string, string>> data)
 {
-	for (auto v : data) {
+	for (auto v : data) 
+	{
 		OrderFuncs.insert(make_pair(v.first, OrderFuncsList[stoi(v.second)]));
 	}
 }
@@ -184,7 +191,8 @@ void Manager::Login(USER* user, vector<string>& orderList)
 {
 	if (orderList.size() > 1 && orderList[1].length() > 0) 
 	{
-		if (user->GetState() != State::auth) {
+		if (user->GetState() != State::auth) 
+		{
 			return;
 		}
 		if (NameList.find(orderList[1]) == NameList.end()) 
@@ -218,7 +226,8 @@ void Manager::US(USER* user, vector<string>& orderList)
 {
 	string s = "";
 	s += DB->GetData(orderList[0], "comment1");
-	for (auto iter = UserList.begin(); iter != UserList.end(); iter++) {
+	for (auto iter = UserList.begin(); iter != UserList.end(); iter++) 
+	{
 		s += DB->AssignData(DB->GetData(orderList[0], "comment0"), vector<string>{iter->second->GetName(), iter->second->GetIP(), to_string(iter->second->GetPort())});
 	}
 	s += DB->GetData(orderList[0], "comment2");
@@ -238,7 +247,8 @@ void Manager::LT(USER* user, vector<string>& orderList)
 	int cnt = 0;
 	for (auto iter = RoomList.begin(); iter != RoomList.end(); iter++) 
 	{
-		if (iter->GetOpen() == true) {
+		if (iter->GetOpen() == true) 
+		{
 			openRoomIdx.push_back(cnt);
 		}
 		cnt++;
@@ -269,15 +279,18 @@ void Manager::J(USER* user, vector<string>& orderList)
 				}
 				return;
 			}
-			else {
+			else 
+			{
 				s = DB->GetData(orderList[0], "comment1");
 			}
 		}
-		else {
+		else 
+		{
 			s = DB->GetData(orderList[0], "comment2");
 		}
 	}
-	else {
+	else 
+	{
 		s = DB->GetData(orderList[0], "comment3");
 	}
 	user->SendMsg(s.c_str());
@@ -306,7 +319,8 @@ void Manager::O(USER* user, vector<string>& orderList)
 			s = DB->GetData(orderList[0], "comment2");
 		}
 	}
-	else {
+	else 
+	{
 		s = DB->GetData(orderList[0], "comment3");
 	}
 	user->SendMsg(s.c_str());
@@ -333,19 +347,23 @@ void Manager::TO(USER* user, vector<string>& orderList)
 					mail = "\r\n# " + user->GetName() + "님의 쪽지 ==>" + orderList[2] + "\r\n";
 					NameList[orderList[1]]->SendMsg(mail.c_str());
 				}
-				else {
+				else 
+				{
 					s = DB->GetData(orderList[0], "comment1");
 				}
 			}
-			else {
+			else 
+			{
 				s = DB->GetData(orderList[0], "comment2");
 			}
 		}
-		else {
+		else 
+		{
 			s = DB->GetData(orderList[0], "comment3");
 		}
 	}
-	else {
+	else 
+	{
 		s = DB->GetData(orderList[0], "comment4");
 	}
 	user->SendMsg(s.c_str());
@@ -431,19 +449,23 @@ void Manager::IN_(USER* user, vector<string>& orderList)
 					s = DB->GetData(orderList[0], "comment0");
 					NameList[orderList[1]]->SendMsg(DB->AssignData(DB->GetData(orderList[0], "comment5"), vector<string>{ user->GetName()}));
 				}
-				else {
+				else 
+				{
 					s = DB->GetData(orderList[0], "comment1");
 				}
 			}
-			else {
+			else 
+			{
 				s = DB->GetData(orderList[0], "comment2");
 			}
 		}
-		else {
+		else 
+		{
 			s = DB->GetData(orderList[0], "comment3");
 		}
 	}
-	else {
+	else 
+	{
 		s = DB->GetData(orderList[0], "comment4");
 	}
 	user->SendMsg(s.c_str());
