@@ -1,4 +1,4 @@
-#include "Manager.h"
+ï»¿#include "Manager.h"
 bool Manager::ExcuteOrder(USER* u, vector<string>& vec) 
 {
 	if (vec.size() <= 0)
@@ -110,7 +110,7 @@ void Manager::InitSocket()
 {
 	if (WSAStartup(MAKEWORD(2, 2), &SocketData) != 0) 
 	{
-		cout << "¼ÒÄÏ Á¤º¸ ·Îµå ½ÇÆÐ";
+		cout << "ì†Œì¼“ ì •ë³´ ë¡œë“œ ì‹¤íŒ¨";
 	}
 }
 void Manager::CreateSocket() 
@@ -120,28 +120,28 @@ void Manager::CreateSocket()
 	ServerSocket = socket(PF_INET, SOCK_STREAM, IPPROTO_IP);
 	if (ServerSocket == INVALID_SOCKET) 
 	{
-		cout << "¼ÒÄÏ »ý¼º ½ÇÆÐ\n";
+		cout << "ì†Œì¼“ ìƒì„± ì‹¤íŒ¨\n";
 	}
 }
 void Manager::SetSocketInfo() 
 {
-	//_serverAddr¼¼ÆÃ
+	//_serverAddrì„¸íŒ…
 	memset(&SocketAddr, 0, sizeof(SocketAddr));
 	SocketAddr.sin_family = AF_INET;
-	SocketAddr.sin_addr.S_un.S_addr = htonl(INADDR_ANY); //IP¼³Á¤
+	SocketAddr.sin_addr.S_un.S_addr = htonl(INADDR_ANY); //IPì„¤ì •
 	SocketAddr.sin_port = htons(Port);
 }
 void Manager::Bind() 
 {
 	if (bind(ServerSocket, (SOCKADDR*)&SocketAddr, sizeof(SocketAddr)) == SOCKET_ERROR) 
 	{
-		cout << "¼ÒÄÏ ¹ÙÀÎµå ½ÇÆÐ\n";
+		cout << "ì†Œì¼“ ë°”ì¸ë“œ ì‹¤íŒ¨\n";
 	}
 }
 void Manager::Listen() {
 	if (listen(ServerSocket, 5) == SOCKET_ERROR) 
 	{
-		cout << "¼ÒÄÏ ¸®½¼ ½ÇÆÐ\n";
+		cout << "ì†Œì¼“ ë¦¬ìŠ¨ ì‹¤íŒ¨\n";
 	}
 	cout << " Server ON\n\n- Log\n";
 }
@@ -166,7 +166,7 @@ void Manager::DisConnectRoom(SOCKET* tmp)
 			{
 				continue;
 			}
-				u->SendMsg(UserList[*tmp]->GetName() + "´ÔÀÌ ³ª°¡¼Ì½À´Ï´Ù\r\n");
+				u->SendMsg(UserList[*tmp]->GetName() + "ë‹˜ì´ ë‚˜ê°€ì…¨ìŠµë‹ˆë‹¤\r\n");
 		}
 		UserList.at(*tmp)->GetmyRoom()->DisConnectUser(UserList.at(*tmp));
 		UserList.at(*tmp)->SetmyRoom(nullptr, "");
@@ -176,17 +176,18 @@ void Manager::DisConnectRoom(SOCKET* tmp)
 
 void Manager::DisConnect(SOCKET* tmp) 
 {
+	USER *user= UserList[*tmp];
 	DisConnectRoom(tmp);
 	NameList.erase(UserList.at(*tmp)->GetName());
 	UserList.erase(*tmp);
 	shutdown(*tmp, SD_BOTH);
 	closesocket(*tmp);
-	delete tmp;
+	delete user;
 	//cout << UserList.size() << "\n";
 }
 void Manager::SendPrompt(USER* user) {
-	user->SendMsg("¸í·É¾î¾È³»(H) Á¾·á(X)\r\n");
-	user->SendMsg("¼±ÅÃ>");
+	user->SendMsg("ëª…ë ¹ì–´ì•ˆë‚´(H) ì¢…ë£Œ(X)\r\n");
+	user->SendMsg("ì„ íƒ>");
 }
 void Manager::Login(USER* user, vector<string>& orderList) 
 {
@@ -298,7 +299,7 @@ void Manager::J(USER* user, vector<string>& orderList)
 }
 void Manager::O(USER* user, vector<string>& orderList)
 {
-	//´ëÈ­¹æ ¸¸µé±â
+	//ëŒ€í™”ë°© ë§Œë“¤ê¸°
 	string s;
 	if (orderList.size() > 1)
 	{
@@ -328,8 +329,8 @@ void Manager::O(USER* user, vector<string>& orderList)
 }
 void Manager::X(USER* user, vector<string>& orderList)
 {
-	//´ëÈ­¹æ ¸¸µé±â
-	user->SendMsg("** Á¾·á¸Þ¼¼Áö.\r\n");
+	//ëŒ€í™”ë°© ë§Œë“¤ê¸°
+	user->SendMsg("** ì¢…ë£Œë©”ì„¸ì§€.\r\n");
 	user->SetFin(true);
 }
 void Manager::TO(USER* user, vector<string>& orderList)
@@ -345,7 +346,7 @@ void Manager::TO(USER* user, vector<string>& orderList)
 				{
 					s = DB->GetData(orderList[0], "comment0");
 					string mail;
-					mail = "\r\n# " + user->GetName() + "´ÔÀÇ ÂÊÁö ==>" + orderList[2] + "\r\n";
+					mail = "\r\n# " + user->GetName() + "ë‹˜ì˜ ìª½ì§€ ==>" + orderList[2] + "\r\n";
 					NameList[orderList[1]]->SendMsg(mail.c_str());
 				}
 				else 
@@ -377,14 +378,14 @@ void Manager::ST(USER* user, vector<string>& orderList)
 		int roomIdx = stoi(orderList[1]) - 1;
 		if (RoomList[roomIdx].GetOpen()) 
 		{
-			//·ë Á¤º¸
+			//ë£¸ ì •ë³´
 			s+= DB->AssignData(DB->GetData(orderList[0], "comment0"), vector<string>{ to_string(roomIdx + 1), to_string(RoomList[roomIdx].GetUsersSize()), to_string(RoomList[roomIdx].GetMaxCnt()), RoomList[roomIdx].GetName() });
-			//°³¼³ ½Ã°£
+			//ê°œì„¤ ì‹œê°„
 			s +=  DB->AssignData(DB->GetData(orderList[0], "comment1"), vector<string>{RoomList[roomIdx].GetOpenTime() });
 
 			for (USER* u : RoomList[roomIdx].GetUsers()) 
 			{
-				//Âü¿©ÀÚ Á¤º¸
+				//ì°¸ì—¬ìž ì •ë³´
 				s+= DB->AssignData(DB->GetData(orderList[0], "comment2"), vector<string>{u->GetName(), u->GetJoinTime()});
 
 			}
@@ -405,8 +406,8 @@ void Manager::ST(USER* user, vector<string>& orderList)
 void Manager::PF(USER* user, vector<string>& orderList)
 {
 	string s;
-	//´ÔÀº ÇöÀç 1¹ø ¹æ¿¡ Âü¿©ÁßÀÔ´Ï´Ù.
-	//´ÔÀ» Ã£À» ¼ö ¾ø½À´Ï´Ù. 
+	//ë‹˜ì€ í˜„ìž¬ 1ë²ˆ ë°©ì— ì°¸ì—¬ì¤‘ìž…ë‹ˆë‹¤.
+	//ë‹˜ì„ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤. 
 	if (orderList.size() > 1) {
 		if (NameList.find(orderList[1]) != NameList.end())
 		{

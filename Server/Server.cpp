@@ -5,7 +5,7 @@
 
 
 using namespace std;
-	
+
 int main()
 {
 	SOCKET* targetSocket;
@@ -20,7 +20,7 @@ int main()
 	while (true)
 	{
 		tmp = read;
-		time.tv_sec = 1;  
+		time.tv_sec = 1;
 		time.tv_usec = 0;
 		req = select(NULL, &tmp, NULL, NULL, &time);
 		if (SOCKET_ERROR == req)
@@ -49,82 +49,81 @@ int main()
 
 				m.UserList.insert(make_pair(cid, user));
 				FD_SET(cid, &read);
-				user->SendMsg("안녕하세요. 텍스트 채팅 서버 입니다. 환영합니다.\r\n**로그인 명령어(LOGIN)를 사용해주세요.\r\n");
+				user->SendMsg("안녕하세요. 텍스트 채팅 서버 입니다. 환영합니다.\r\n**로그인 명령어(LOGIN)를 사용해주세요. \r\n");
 				printf("%s:%d connected\n", m.UserList[cid]->GetIP(), m.UserList[cid]->GetPort());
 			}
 			else
 			{
-				char c;
-				int len = recv(*targetSocket, &c, sizeof(char), 0);
-				if (0 == len)
+				string msg;
+				char tmp_msg[PACKET_SIZE] = { 0 };
+				bool isConnect = false;
+				do {
+					ZeroMemory(&tmp_msg, PACKET_SIZE);
+					if (recv(*targetSocket, tmp_msg, PACKET_SIZE, 0)==0)
+					{
+						//연결 종료
+						printf("[%d] is Disconneted\n", *targetSocket);
+						FD_CLR(*targetSocket, &read);
+						m.DisConnect(&tmp.fd_array[i]);
+						isConnect = false;
+						break;
+					}
+					msg += string(tmp_msg);
+					isConnect = true;
+				} while (!(*(msg.end() - 2) == '\r' && *(msg.end() - 1) == '\n'));
+				if (!isConnect) 
 				{
-					//연결 종료
-					printf("[%d] is Disconneted\n", *targetSocket);
+					continue;
+				}
+				string* dataBuffer = &m.UserList[*targetSocket]->DataBuffer;
+				*dataBuffer = msg.substr(0,msg.length()-2);
+				m.Print(string(m.UserList[*targetSocket]->GetIP()) + ":" + to_string(m.UserList[*targetSocket]->GetPort()) + " [" + m.UserList[*targetSocket]->GetName() + "]" + "msg is :" + *dataBuffer + "\r\n");
+
+				vector<string> orderList = m.Split(*dataBuffer, " ", 2);
+
+				bool order = m.ExcuteOrder(m.UserList[*targetSocket], orderList);
+
+				switch (m.UserList[*targetSocket]->GetState())
+				{
+				case EState::Auth:
+					if (!order)
+					{
+						if (m.UserList[*targetSocket]->GetState() == EState::Auth)
+						{
+							m.UserList[*targetSocket]->SendMsg("**로그인 명령어(LOGIN)를 사용해주세요.\r\n");
+						}
+					}
+					break;
+
+				case EState::Lobby:
+					if (m.UserList[*targetSocket]->GetState() == EState::Lobby)
+					{
+						//입력창 출력
+						m.SendPrompt(m.UserList[*targetSocket]);
+					}
+					break;
+
+				case EState::Room:
+					//룸 전체에게 채팅 보내기
+					if (!order) {
+						for (USER* u : m.UserList[*targetSocket]->GetmyRoom()->GetUsers())
+						{
+							u->SendMsg(m.UserList[*targetSocket]->GetName() + ">" + *dataBuffer + "\r\n");
+						}
+					}
+					break;
+				default:
+					break;
+				}
+				//버퍼 비우기
+				m.UserList[*targetSocket]->DataBuffer.clear();
+
+				//소켓 종료 요청 확인
+				if (m.UserList[*targetSocket]->GetFin())
+				{
 					FD_CLR(*targetSocket, &read);
 					m.DisConnect(&tmp.fd_array[i]);
-				}
-				else
-				{
-					if (m.UserList.at(*targetSocket)->CatchOrder(&c))
-					{
-						//엔터 입력시
-						//버퍼 결합
-						char* msg = m.UserList[*targetSocket]->AssembleBuffer();
-						m.Print(string(m.UserList[*targetSocket]->GetIP()) + ":" + to_string(m.UserList[*targetSocket]->GetPort()) + " [" + m.UserList[*targetSocket]->GetName() + "]" + ":" + msg + "\r\n");
-						
-						string msgString(msg);
-						vector<string> orderList = m.Split(msgString, " ", 2);
-
-						bool order = m.ExcuteOrder(m.UserList[*targetSocket], orderList);
-						switch (m.UserList[*targetSocket]->GetState())
-						{
-						case EState::Auth:
-							if (!order) 
-							{
-								if (m.UserList[*targetSocket]->GetState() == EState::Auth)
-								{
-									m.UserList[*targetSocket]->SendMsg("**로그인 명령어(LOGIN)를 사용해주세요.\r\n");
-								}
-							}
-							break;
-
-						case EState::Lobby:
-							if (m.UserList[*targetSocket]->GetState() == EState::Lobby)
-							{
-								//입력창 출력
-								m.SendPrompt(m.UserList[*targetSocket]);
-							}
-							break;
-
-						case EState::Room:
-							//룸 전체에게 채팅 보내기
-							if (!order) {
-								for (USER* u : m.UserList[*targetSocket]->GetmyRoom()->GetUsers())
-								{
-									u->SendMsg(m.UserList[*targetSocket]->GetName() + ">" + msgString + "\r\n");
-								}
-							}
-							break;
-						default:
-							break;
-						}
-						//버퍼 비우기
-						delete msg;
-						m.UserList[*targetSocket]->Buffer.clear();
-
-						//소켓 종료 요청 확인
-						if (m.UserList[*targetSocket]->GetFin()) 
-						{
-							FD_CLR(*targetSocket, &read);
-							m.DisConnect(&tmp.fd_array[i]);
-							continue;
-						}
-					}
-					else
-					{
-						//명령어 수집
-						m.UserList[*targetSocket]->Buffer.push_back(c);
-					}
+					continue;
 				}
 			}
 		}

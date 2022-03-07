@@ -33,6 +33,7 @@ private:
 public:
 	SOCKET Socket;
 	vector<char> Buffer;
+	string DataBuffer;
 	SOCKADDR_IN Addr;
 
 	USER();
@@ -60,5 +61,6 @@ public:
 	void SendMsg(const string s);
 	bool CatchOrder(char*);
 	char* AssembleBuffer();
+	char* FixData();
 
 };
