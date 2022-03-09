@@ -16,6 +16,14 @@ void USER::SetFin(bool f)
 {
 	IsFin = f;
 }
+bool USER::GetIsUE()
+{
+	return IsUE;
+}
+void USER::SetIsUE(bool isUe)
+{
+	IsUE = isUe;
+}
 bool USER::GetFin()
 {
 	return IsFin;
@@ -62,7 +70,7 @@ void USER::SendMsg(const char c[])
 	
 	send(this->Socket, c, strlen(c), 0);
 }
-void USER::SendMsg(const string s)
+void USER::SendMsg(const string& s)
 {
 	
 	send(this->Socket, s.c_str(), s.length(), 0);

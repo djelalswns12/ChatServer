@@ -145,7 +145,7 @@ void Manager::Listen() {
 	}
 	cout << " Server ON\n\n- Log\n";
 }
-void Manager::Print(string s) {
+void Manager::Print(const string& s) {
 	cout << s;
 }
 void Manager::SetOrder(vector<pair<string, string>> data)
@@ -186,8 +186,8 @@ void Manager::DisConnect(SOCKET* tmp)
 	//cout << UserList.size() << "\n";
 }
 void Manager::SendPrompt(USER* user) {
-	user->SendMsg("명령어안내(H) 종료(X)\r\n");
-	user->SendMsg("선택>");
+	user->SendMsg("명령어안내(H) 종료(X)\r\n선택 > ");
+	//user->SendMsg("명령어안내(H) 종료(X)\r\n선택 > \0 data Code");
 }
 void Manager::Login(USER* user, vector<string>& orderList) 
 {
@@ -199,6 +199,13 @@ void Manager::Login(USER* user, vector<string>& orderList)
 		}
 		if (NameList.find(orderList[1]) == NameList.end()) 
 		{
+			//언리얼 유저인지 구분
+			if (orderList[0].find("/U")!= string::npos) {
+				user->SetIsUE(true);
+			}
+			else {
+				user->SetIsUE(false);
+			}
 			user->SetName(orderList[1]);
 			NameList.insert(make_pair(orderList[1], user));
 			user->SetState(EState::Lobby);

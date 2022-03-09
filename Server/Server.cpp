@@ -2,9 +2,45 @@
 #include "USER.h"
 #include "ROOM.h"
 #include "DataParse.h"
-
+#include <tchar.h>
 
 using namespace std;
+wchar_t* ConverCtoWC(const char* str)
+{
+	//wchar_t형 변수 선언
+	wchar_t* pStr;
+	//멀티 바이트 크기 계산 길이 반환
+	int strSize = MultiByteToWideChar(CP_ACP, 0, str, -1, NULL, NULL);
+	//wchar_t 메모리 할당
+	pStr = new WCHAR[strSize];
+	//형 변환
+	MultiByteToWideChar(CP_ACP, 0, str, strlen(str) + 1, pStr, strSize);
+	return pStr;
+
+}
+char* ConvertWCtoC(const wchar_t* str)
+{
+	//반환할 char* 변수 선언
+	char* pStr;
+	//입력받은 wchar_t 변수의 길이를 구함
+	int strSize = WideCharToMultiByte(CP_ACP, 0, str, -1, NULL, 0, NULL, NULL);
+	//char* 메모리 할당
+	pStr = new char[strSize];
+	//형 변환
+	WideCharToMultiByte(CP_ACP, 0, str, -1, pStr, strSize, 0, 0);
+	return pStr;
+}
+
+std::string multibyte_to_utf8(const std::string& str) {
+	int nLen = str.size();
+	wchar_t warr[256];
+	MultiByteToWideChar(CP_ACP, 0, (LPCSTR)str.c_str(), -1, warr, 256);
+	char carr[256];
+	memset(carr, '\0', sizeof(carr));
+	WideCharToMultiByte(CP_UTF8, 0, warr, -1, carr, 256, NULL, NULL);
+	return carr;
+}
+
 
 int main()
 {
@@ -68,18 +104,19 @@ int main()
 						isConnect = false;
 						break;
 					}
-					msg += string(tmp_msg);
 					isConnect = true;
+					msg += tmp_msg;
 				} while (!(*(msg.end() - 2) == '\r' && *(msg.end() - 1) == '\n'));
+
 				if (!isConnect) 
 				{
 					continue;
 				}
-				string* dataBuffer = &m.UserList[*targetSocket]->DataBuffer;
-				*dataBuffer = msg.substr(0,msg.length()-2);
-				m.Print(string(m.UserList[*targetSocket]->GetIP()) + ":" + to_string(m.UserList[*targetSocket]->GetPort()) + " [" + m.UserList[*targetSocket]->GetName() + "]" + "msg is :" + *dataBuffer + "\r\n");
+				
+				string dataBuffer = msg.substr(0, msg.length() - 2);
+				m.Print(string(m.UserList[*targetSocket]->GetIP()) + ":" + to_string(m.UserList[*targetSocket]->GetPort()) + " [" + m.UserList[*targetSocket]->GetName() + "]" + "msg is :" + dataBuffer + "\r\n");
 
-				vector<string> orderList = m.Split(*dataBuffer, " ", 2);
+				vector<string> orderList = m.Split(dataBuffer, " ", 2);
 
 				bool order = m.ExcuteOrder(m.UserList[*targetSocket], orderList);
 
@@ -108,16 +145,13 @@ int main()
 					if (!order) {
 						for (USER* u : m.UserList[*targetSocket]->GetmyRoom()->GetUsers())
 						{
-							u->SendMsg(m.UserList[*targetSocket]->GetName() + ">" + *dataBuffer + "\r\n");
+							u->SendMsg(m.UserList[*targetSocket]->GetName() + ">" + dataBuffer + "\r\n");
 						}
 					}
 					break;
 				default:
 					break;
 				}
-				//버퍼 비우기
-				m.UserList[*targetSocket]->DataBuffer.clear();
-
 				//소켓 종료 요청 확인
 				if (m.UserList[*targetSocket]->GetFin())
 				{

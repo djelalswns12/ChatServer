@@ -69,7 +69,7 @@ public:
 	void DisConnectRoom(SOCKET*);
 	void DisConnect(SOCKET*);
 	int FindEmptyRoomIdx();
-	void Print(string);
+	void Print(const string&);
 
 	void SendPrompt(USER*);
 	void Login(USER*, vector<string>&);
