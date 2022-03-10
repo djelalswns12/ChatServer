@@ -166,7 +166,8 @@ void Manager::DisConnectRoom(SOCKET* tmp)
 			{
 				continue;
 			}
-				u->SendMsg(UserList[*tmp]->GetName() + "님이 나가셨습니다\r\n");
+			string s = UserList[*tmp]->GetName() + "님이 나가셨습니다\r\n";
+			Msg(u, s);
 		}
 		UserList.at(*tmp)->GetmyRoom()->DisConnectUser(UserList.at(*tmp));
 		UserList.at(*tmp)->SetmyRoom(nullptr, "");
@@ -175,7 +176,7 @@ void Manager::DisConnectRoom(SOCKET* tmp)
 void Manager::InsertUser(USER* user)
 {
 	UserList.insert(make_pair(user->Socket, user));
-	UserChangeEvent();
+	//UserChangeEvent();
 }
 void Manager::RemoveUser(SOCKET* tmp)
 {
@@ -186,21 +187,27 @@ void Manager::RemoveUser(SOCKET* tmp)
 void Manager::UserChangeEvent()
 {
 	// 유저 정보를 브로드 캐스트 한다.
-	cout << "\n유저 정보 변화감지 됨\n";
+	cout << "\n \t유저 데이터 변화감지 , 브로드캐스트\n";
 	vector<string> s;
 	s.push_back(string("US"));
 	for (auto u : UserList) {
-		ExcuteOrder(u.second, s );
+		if (u.second->GetIsUE()) 
+		{
+			ExcuteOrder(u.second, s);
+		}
 	}
 }
 void Manager::RoomChangeEvent()
 {
 	// 룸 정보를 브로드 캐스트 한다.
-	cout << "\n룸 정보 변화감지 됨\n";
+	cout << "\n \t룸 데이터 변화감지 , 브로드캐스트\n";
 	vector<string> s;
 	s.push_back(string("LT"));
 	for (auto u : UserList) {
-		ExcuteOrder(u.second, s);
+		if (u.second->GetIsUE())
+		{
+			ExcuteOrder(u.second, s);
+		}
 	}
 }
 void Manager::DisConnect(SOCKET* tmp) 
@@ -258,6 +265,7 @@ void Manager::Login(USER* user, vector<string>& orderList)
 		s += DB->GetData(orderList[0], "comment2");
 	}
 	user->SendMsg(s);
+	UserChangeEvent();
 }
 
 int Manager::FindEmptyRoomIdx() 
@@ -279,7 +287,14 @@ void Manager::US(USER* user, vector<string>& orderList)
 	s += DB->GetData(orderList[0], "comment1");
 	for (auto iter = UserList.begin(); iter != UserList.end(); iter++) 
 	{
-		s += DB->AssignData(DB->GetData(orderList[0], "comment0"), vector<string>{iter->second->GetName(), iter->second->GetIP(), to_string(iter->second->GetPort())});
+		if (iter->second->GetState() == EState::Lobby) 
+		{
+			s += DB->AssignData(DB->GetData(orderList[0], "comment0"), vector<string>{iter->second->GetName(), iter->second->GetIP(), to_string(iter->second->GetPort())});
+		}
+		else if (iter->second->GetState() == EState::Room) 
+		{
+			DB->AssignData(DB->GetData(orderList[0], "comment3"), vector<string>{iter->second->GetName(),to_string(iter->second->GetmyRoom()->GetNumber()) ,iter->second->GetIP(), to_string(iter->second->GetPort())});
+		}
 	}
 	s += DB->GetData(orderList[0], "comment2");
 	s += "<H>" + orderList[0] + "<H>";

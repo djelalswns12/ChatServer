@@ -85,7 +85,7 @@ int main()
 				m.InsertUser(user);
 
 				FD_SET(cid, &read);
-				string s = "안녕하세요! 텍스트 채팅 서버 입니다. 환영합니다.**로그인 명령어(LOGIN)를 사용해주세요. \r\n";
+				string s = "안녕하세요! 텍스트 채팅 서버 입니다.\r\n환영합니다.**로그인 명령어(LOGIN)를 사용해주세요. \r\n";
 				m.Msg(user,s);
 				printf("%s:%d connected\n", m.UserList[cid]->GetIP(), m.UserList[cid]->GetPort());
 			}

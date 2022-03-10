@@ -14,7 +14,7 @@ void ROOM::SetRoom(string name, string owner, string openTime, int maxCnt, int i
 	this->MaxCnt = maxCnt;
 	SetNumber(idx);
 	SetOpen(true);
-	Manager::getIncetance().RoomChangeEvent();
+	//Manager::getIncetance().RoomChangeEvent();
 }
 void ROOM::SetNumber(int n)
 {
