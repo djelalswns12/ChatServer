@@ -266,6 +266,7 @@ void Manager::Login(USER* user, vector<string>& orderList)
 	}
 	user->SendMsg(s);
 	UserChangeEvent();
+	RoomChangeEvent();
 }
 
 int Manager::FindEmptyRoomIdx() 
