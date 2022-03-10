@@ -65,14 +65,16 @@ string USER::GetJoinTime()
 {
 	return JoinTime;
 }
-void USER::SendMsg(const char c[])
-{
-	
-	send(this->Socket, c, strlen(c), 0);
-}
 void USER::SendMsg(const string& s)
 {
-	
+	if (!GetIsUE()) {
+		vector<string> data=Manager::getIncetance().Split(s, "<H>");
+		if (data.size() > 2) 
+		{
+			send(this->Socket, data[1].c_str(), data[1].length(), 0);
+			return;
+		}
+	}
 	send(this->Socket, s.c_str(), s.length(), 0);
 }
 bool USER::operator < (const USER& ref) const

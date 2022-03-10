@@ -82,10 +82,11 @@ int main()
 
 				SOCKET cid = accept(m.ServerSocket, (SOCKADDR*)&clientAddr, &size);
 				USER* user = new USER(cid, clientAddr);
+				m.InsertUser(user);
 
-				m.UserList.insert(make_pair(cid, user));
 				FD_SET(cid, &read);
-				user->SendMsg("안녕하세요. 텍스트 채팅 서버 입니다. 환영합니다.\r\n**로그인 명령어(LOGIN)를 사용해주세요. \r\n");
+				string s = "안녕하세요! 텍스트 채팅 서버 입니다. 환영합니다.**로그인 명령어(LOGIN)를 사용해주세요. \r\n";
+				m.Msg(user,s);
 				printf("%s:%d connected\n", m.UserList[cid]->GetIP(), m.UserList[cid]->GetPort());
 			}
 			else
@@ -127,7 +128,8 @@ int main()
 					{
 						if (m.UserList[*targetSocket]->GetState() == EState::Auth)
 						{
-							m.UserList[*targetSocket]->SendMsg("**로그인 명령어(LOGIN)를 사용해주세요.\r\n");
+							string s="**로그인 명령어(LOGIN)를 사용해주세요.\r\n";
+							m.Msg(m.UserList[*targetSocket], s);
 						}
 					}
 					break;

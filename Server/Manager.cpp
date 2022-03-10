@@ -30,7 +30,7 @@ string Manager::GetNowTime()
 	return  hour + ":" + min + ":" + sec;
 }
 
-vector<string> Manager::Split(string ids, string target, int cnt) 
+vector<string> Manager::Split(const string& ids, string target, int cnt) 
 {
 	vector<string> names;
 	size_t cur, pre = 0;
@@ -64,7 +64,7 @@ vector<string> Manager::Split(string ids, string target, int cnt)
 	return names;
 }
 
-vector<string> Manager::Split(string ids, string target) 
+vector<string> Manager::Split(const string& ids, string target) 
 {
 	vector<string> names;
 	size_t cur, pre = 0;
@@ -170,37 +170,72 @@ void Manager::DisConnectRoom(SOCKET* tmp)
 		}
 		UserList.at(*tmp)->GetmyRoom()->DisConnectUser(UserList.at(*tmp));
 		UserList.at(*tmp)->SetmyRoom(nullptr, "");
-
 	}
 }
-
+void Manager::InsertUser(USER* user)
+{
+	UserList.insert(make_pair(user->Socket, user));
+	UserChangeEvent();
+}
+void Manager::RemoveUser(SOCKET* tmp)
+{
+	NameList.erase(UserList.at(*tmp)->GetName());
+	UserList.erase(*tmp);
+	UserChangeEvent();
+}
+void Manager::UserChangeEvent()
+{
+	// 유저 정보를 브로드 캐스트 한다.
+	cout << "\n유저 정보 변화감지 됨\n";
+	vector<string> s;
+	s.push_back(string("US"));
+	for (auto u : UserList) {
+		ExcuteOrder(u.second, s );
+	}
+}
+void Manager::RoomChangeEvent()
+{
+	// 룸 정보를 브로드 캐스트 한다.
+	cout << "\n룸 정보 변화감지 됨\n";
+	vector<string> s;
+	s.push_back(string("LT"));
+	for (auto u : UserList) {
+		ExcuteOrder(u.second, s);
+	}
+}
 void Manager::DisConnect(SOCKET* tmp) 
 {
 	USER *user= UserList[*tmp];
 	DisConnectRoom(tmp);
-	NameList.erase(UserList.at(*tmp)->GetName());
-	UserList.erase(*tmp);
+	RemoveUser(tmp);
 	shutdown(*tmp, SD_BOTH);
 	closesocket(*tmp);
 	delete user;
 	//cout << UserList.size() << "\n";
 }
 void Manager::SendPrompt(USER* user) {
-	user->SendMsg("명령어안내(H) 종료(X)\r\n선택 > ");
-	//user->SendMsg("명령어안내(H) 종료(X)\r\n선택 > \0 data Code");
+	string s = "명령어안내(H) 종료(X)\r\n선택 > ";
+	Msg(user,s);
 }
-void Manager::Login(USER* user, vector<string>& orderList) 
+void Manager::Msg(USER* user, string& data)
 {
-	if (orderList.size() > 1 && orderList[1].length() > 0) 
+	string s = "<H>MSG<H>"+data;
+	s += "<H>MSG<H>";
+	user->SendMsg(s);
+}
+void Manager::Login(USER* user, vector<string>& orderList)
+{
+	string s = "";
+	if (orderList.size() > 1 && orderList[1].length() > 0)
 	{
-		if (user->GetState() != EState::Auth) 
+		if (user->GetState() != EState::Auth)
 		{
 			return;
 		}
-		if (NameList.find(orderList[1]) == NameList.end()) 
+		if (NameList.find(orderList[1]) == NameList.end())
 		{
 			//언리얼 유저인지 구분
-			if (orderList[0].find("/U")!= string::npos) {
+			if (orderList[0].find("/U") != string::npos) {
 				user->SetIsUE(true);
 			}
 			else {
@@ -209,14 +244,21 @@ void Manager::Login(USER* user, vector<string>& orderList)
 			user->SetName(orderList[1]);
 			NameList.insert(make_pair(orderList[1], user));
 			user->SetState(EState::Lobby);
-			user->SendMsg(DB->GetData(orderList[0], "comment0"));
-			return;
+			s += "<H>LOGINSUCCESS<H>";
+			s += DB->GetData(orderList[0], "comment0");
+			s += "<H>LOGINSUCCESS<H>";
 		}
-		user->SendMsg(DB->GetData(orderList[0], "comment1"));
-		return;
+		else
+		{
+			s += DB->GetData(orderList[0], "comment1");
+		}
 	}
-	user->SendMsg(DB->GetData(orderList[0], "comment2"));
+	else 
+	{
+		s += DB->GetData(orderList[0], "comment2");
 	}
+	user->SendMsg(s);
+}
 
 int Manager::FindEmptyRoomIdx() 
 {
@@ -233,14 +275,15 @@ int Manager::FindEmptyRoomIdx()
 
 void Manager::US(USER* user, vector<string>& orderList) 
 {
-	string s = "";
+	string s = "<H>" +orderList[0]+"<H>";
 	s += DB->GetData(orderList[0], "comment1");
 	for (auto iter = UserList.begin(); iter != UserList.end(); iter++) 
 	{
 		s += DB->AssignData(DB->GetData(orderList[0], "comment0"), vector<string>{iter->second->GetName(), iter->second->GetIP(), to_string(iter->second->GetPort())});
 	}
 	s += DB->GetData(orderList[0], "comment2");
-	user->SendMsg(s.c_str());
+	s += "<H>" + orderList[0] + "<H>";
+	user->SendMsg(s);
 }
 void Manager::H(USER* user, vector<string>& orderList) 
 {
@@ -262,14 +305,15 @@ void Manager::LT(USER* user, vector<string>& orderList)
 		}
 		cnt++;
 	}
-	string s = "";
+	string s = "<H>" + orderList[0] + "<H>";
 	s += DB->GetData(orderList[0], "comment1");
 	for (int i = 0; i < openRoomIdx.size(); i++) 
 	{
 		s += DB->AssignData(DB->GetData(orderList[0], "comment0"), vector<string>{to_string(openRoomIdx[i] + 1), to_string(RoomList[openRoomIdx[i]].GetUsersSize()) , to_string(RoomList[openRoomIdx[i]].GetMaxCnt()), RoomList[openRoomIdx[i]].GetName()});
 	}
 	s += DB->GetData(orderList[0], "comment1");
-	user->SendMsg(s.c_str());
+	s += "<H>" + orderList[0] + "<H>";
+	user->SendMsg(s);
 }
 void Manager::J(USER* user, vector<string>& orderList)
 {
@@ -284,7 +328,7 @@ void Manager::J(USER* user, vector<string>& orderList)
 				s = DB->AssignData(DB->GetData(orderList[0], "comment0"), vector<string>{user->GetName() });
 				for (USER* u : user->GetmyRoom()->GetUsers()) 
 				{
-					u->SendMsg(s.c_str());
+					u->SendMsg(s);
 				}
 				return;
 			}
@@ -302,7 +346,7 @@ void Manager::J(USER* user, vector<string>& orderList)
 	{
 		s = DB->GetData(orderList[0], "comment3");
 	}
-	user->SendMsg(s.c_str());
+	user->SendMsg(s);
 }
 void Manager::O(USER* user, vector<string>& orderList)
 {
@@ -332,12 +376,13 @@ void Manager::O(USER* user, vector<string>& orderList)
 	{
 		s = DB->GetData(orderList[0], "comment3");
 	}
-	user->SendMsg(s.c_str());
+	user->SendMsg(s);
 }
 void Manager::X(USER* user, vector<string>& orderList)
 {
 	//대화방 만들기
-	user->SendMsg("** 종료메세지.\r\n");
+	string s = "** 종료메세지.\r\n";
+	user->SendMsg(s);
 	user->SetFin(true);
 }
 void Manager::TO(USER* user, vector<string>& orderList)
@@ -354,7 +399,7 @@ void Manager::TO(USER* user, vector<string>& orderList)
 					s = DB->GetData(orderList[0], "comment0");
 					string mail;
 					mail = "\r\n# " + user->GetName() + "님의 쪽지 ==>" + orderList[2] + "\r\n";
-					NameList[orderList[1]]->SendMsg(mail.c_str());
+					NameList[orderList[1]]->SendMsg(mail);
 				}
 				else 
 				{
@@ -375,7 +420,7 @@ void Manager::TO(USER* user, vector<string>& orderList)
 	{
 		s = DB->GetData(orderList[0], "comment4");
 	}
-	user->SendMsg(s.c_str());
+	user->SendMsg(s);
 }
 void Manager::ST(USER* user, vector<string>& orderList)
 {
@@ -408,7 +453,7 @@ void Manager::ST(USER* user, vector<string>& orderList)
 		s= DB->GetData(orderList[0], "comment5");
 	}
 
-	user->SendMsg(s.c_str());
+	user->SendMsg(s);
 }
 void Manager::PF(USER* user, vector<string>& orderList)
 {
@@ -438,7 +483,7 @@ void Manager::PF(USER* user, vector<string>& orderList)
 			s = DB->AssignData(DB->GetData(orderList[0], "comment0"), vector<string>{ user->GetName(), user->GetIP(), to_string(user->GetPort()) });
 		}
 	}
-	user->SendMsg(s.c_str());
+	user->SendMsg(s);
 }
 void Manager::Q(USER* user, vector<string>& orderList)
 {
@@ -477,6 +522,6 @@ void Manager::IN_(USER* user, vector<string>& orderList)
 	{
 		s = DB->GetData(orderList[0], "comment4");
 	}
-	user->SendMsg(s.c_str());
+	user->SendMsg(s);
 }
 

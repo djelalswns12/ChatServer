@@ -56,8 +56,8 @@ public:
 	vector<OrderFunc> OrderFuncsList{ &Manager::H,&Manager::H_,&Manager::US,&Manager::LT,&Manager::J,&Manager::O,&Manager::TO,&Manager::ST,&Manager::PF,&Manager::Login,&Manager::Q,&Manager::IN_,&Manager::X };
 
 	string GetNowTime();
-	vector<string> Split(string, string);
-	vector<string> Split(string, string, int);
+	vector<string> Split(const string&, string);
+	vector<string> Split(const string&, string, int);
 	bool IsNumber(string);
 	void ServerON(string);
 	void InitSocket();
@@ -72,6 +72,7 @@ public:
 	void Print(const string&);
 
 	void SendPrompt(USER*);
+	void Msg(USER*,string&);
 	void Login(USER*, vector<string>&);
 	void H(USER*, vector<string>&);
 	void H_(USER*, vector<string>&);
@@ -85,6 +86,12 @@ public:
 	void Q(USER*, vector<string>&);
 	void X(USER*, vector<string>&);
 	void IN_(USER*, vector<string>&);
+
+	void InsertUser(USER*);
+	void RemoveUser(SOCKET*);
+	
+	void UserChangeEvent();
+	void RoomChangeEvent();
 
 	void SetOrder(vector<pair<string, string>>);
 	bool ExcuteOrder(USER*, vector<string>&);

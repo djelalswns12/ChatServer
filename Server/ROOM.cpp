@@ -14,6 +14,7 @@ void ROOM::SetRoom(string name, string owner, string openTime, int maxCnt, int i
 	this->MaxCnt = maxCnt;
 	SetNumber(idx);
 	SetOpen(true);
+	Manager::getIncetance().RoomChangeEvent();
 }
 void ROOM::SetNumber(int n)
 {
@@ -48,6 +49,7 @@ void ROOM::SetUser(USER* user)
 	Users.insert(user);
 	user->SetmyRoom(this, Manager::getIncetance().GetNowTime());
 	user->SetState(EState::Room);
+	Manager::getIncetance().RoomChangeEvent();
 }
 set<USER*> ROOM::GetUsers()
 {
@@ -65,8 +67,10 @@ void ROOM::DisConnectUser(USER* u)
 {
 	u->SetState(EState::Lobby);
 	Users.erase(u);
+
 	if (Users.size() <= 0) 
 	{
 		SetOpen(false);
 	}
+	Manager::getIncetance().RoomChangeEvent();
 }

@@ -61,7 +61,6 @@ public:
 	void SetmyRoom(ROOM*,string);
 
 	bool operator < (const USER&) const;
-	void SendMsg(const char c[]);
 	void SendMsg(const string& s);
 	bool CatchOrder(char*);
 	char* AssembleBuffer();
