@@ -22,6 +22,9 @@ public:
 	DataParse();
 	DataParse(string);
 	void ReadData(string);
+
+	string ForTelnetData(string str);
+	string ForUE4Data(string str);
 	vector<pair<string, string>> GetOrderData();
 	string GetData(string,string);
 	string AssignData(string,vector<string>);

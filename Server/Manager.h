@@ -58,6 +58,8 @@ public:
 	string GetNowTime();
 	vector<string> Split(const string&, string);
 	vector<string> Split(const string&, string, int);
+	string ForTelnetData(string str);
+	string ForUE4Data(string str);
 	bool IsNumber(string);
 	void ServerON(string);
 	void InitSocket();

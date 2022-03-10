@@ -50,6 +50,16 @@ void ROOM::SetUser(USER* user)
 	user->SetmyRoom(this, Manager::getIncetance().GetNowTime());
 	user->SetState(EState::Room);
 	Manager::getIncetance().RoomChangeEvent();
+	/*vector<string> v1;
+	v1.push_back("/ST");
+	v1.push_back(to_string(GetNumber()));
+	for (USER* u : Users) {
+		if (u->GetIsUE()) 
+		{
+			cout << "msg send";
+			Manager::getIncetance().ExcuteOrder(u, v1);
+		}
+	}*/
 }
 set<USER*> ROOM::GetUsers()
 {

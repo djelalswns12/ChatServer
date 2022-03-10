@@ -147,7 +147,7 @@ int main()
 					if (!order) {
 						for (USER* u : m.UserList[*targetSocket]->GetmyRoom()->GetUsers())
 						{
-							u->SendMsg(m.UserList[*targetSocket]->GetName() + ">" + dataBuffer + "\r\n");
+							u->SendMsg("<H>UM<H>"+m.UserList[*targetSocket]->GetName() + ": " + dataBuffer + "\r\n<H>UM<H>");
 						}
 					}
 					break;

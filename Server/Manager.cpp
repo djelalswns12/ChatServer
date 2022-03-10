@@ -167,7 +167,7 @@ void Manager::DisConnectRoom(SOCKET* tmp)
 				continue;
 			}
 			string s = UserList[*tmp]->GetName() + "님이 나가셨습니다\r\n";
-			Msg(u, s);
+			u->SendMsg("<H>UM<H>" + s + "<H>UM<H>");
 		}
 		UserList.at(*tmp)->GetmyRoom()->DisConnectUser(UserList.at(*tmp));
 		UserList.at(*tmp)->SetmyRoom(nullptr, "");
@@ -187,26 +187,40 @@ void Manager::RemoveUser(SOCKET* tmp)
 void Manager::UserChangeEvent()
 {
 	// 유저 정보를 브로드 캐스트 한다.
-	cout << "\n \t유저 데이터 변화감지 , 브로드캐스트\n";
-	vector<string> s;
-	s.push_back(string("US"));
+	//cout << "\n \t유저 데이터 변화감지 , 브로드캐스트\n";
+	vector<string> s1,s2;
+	s1.push_back(string("US"));
+	s2.push_back(string("/US"));
 	for (auto u : UserList) {
 		if (u.second->GetIsUE()) 
 		{
-			ExcuteOrder(u.second, s);
+			if (u.second->GetState() == EState::Lobby || u.second->GetState() == EState::Auth)
+			{
+				ExcuteOrder(u.second, s1);
+			}
+			else {
+				ExcuteOrder(u.second, s2);
+			}
 		}
 	}
 }
 void Manager::RoomChangeEvent()
 {
 	// 룸 정보를 브로드 캐스트 한다.
-	cout << "\n \t룸 데이터 변화감지 , 브로드캐스트\n";
-	vector<string> s;
-	s.push_back(string("LT"));
+	//cout << "\n \t룸 데이터 변화감지 , 브로드캐스트\n";
+	vector<string> s1,s2;
+	s1.push_back(string("LT"));
+	s2.push_back(string("/LT"));
 	for (auto u : UserList) {
 		if (u.second->GetIsUE())
 		{
-			ExcuteOrder(u.second, s);
+			if (u.second->GetState() == EState::Lobby || u.second->GetState() == EState::Auth)
+			{
+				ExcuteOrder(u.second, s1);
+			}
+			else {
+				ExcuteOrder(u.second, s2);
+			}
 		}
 	}
 }
@@ -226,8 +240,8 @@ void Manager::SendPrompt(USER* user) {
 }
 void Manager::Msg(USER* user, string& data)
 {
-	string s = "<H>MSG<H>"+data;
-	s += "<H>MSG<H>";
+	string s = "<H>MS<H>"+data;
+	s += "<H>MS<H>";
 	user->SendMsg(s);
 }
 void Manager::Login(USER* user, vector<string>& orderList)
@@ -239,25 +253,28 @@ void Manager::Login(USER* user, vector<string>& orderList)
 		{
 			return;
 		}
+		//언리얼 유저인지 구분
+
+		if (orderList[0].find("/U") != string::npos) {
+			user->SetIsUE(true);
+		}
+		else {
+			user->SetIsUE(false);
+		}
 		if (NameList.find(orderList[1]) == NameList.end())
 		{
-			//언리얼 유저인지 구분
-			if (orderList[0].find("/U") != string::npos) {
-				user->SetIsUE(true);
-			}
-			else {
-				user->SetIsUE(false);
-			}
 			user->SetName(orderList[1]);
 			NameList.insert(make_pair(orderList[1], user));
 			user->SetState(EState::Lobby);
-			s += "<H>LOGINSUCCESS<H>";
+			s += "<H>LS<H>";
 			s += DB->GetData(orderList[0], "comment0");
-			s += "<H>LOGINSUCCESS<H>";
+			s += "<H>LS<H>";
 		}
 		else
 		{
+			s += "<H>LF<H>";
 			s += DB->GetData(orderList[0], "comment1");
+			s += "<H>LF<H>";
 		}
 	}
 	else 
@@ -284,7 +301,7 @@ int Manager::FindEmptyRoomIdx()
 
 void Manager::US(USER* user, vector<string>& orderList) 
 {
-	string s = "<H>" +orderList[0]+"<H>";
+	string s = "<H>US<H>";
 	s += DB->GetData(orderList[0], "comment1");
 	for (auto iter = UserList.begin(); iter != UserList.end(); iter++) 
 	{
@@ -294,11 +311,11 @@ void Manager::US(USER* user, vector<string>& orderList)
 		}
 		else if (iter->second->GetState() == EState::Room) 
 		{
-			DB->AssignData(DB->GetData(orderList[0], "comment3"), vector<string>{iter->second->GetName(),to_string(iter->second->GetmyRoom()->GetNumber()) ,iter->second->GetIP(), to_string(iter->second->GetPort())});
+			s+=DB->AssignData(DB->GetData(orderList[0], "comment3"), vector<string>{iter->second->GetName(),to_string(iter->second->GetmyRoom()->GetNumber()) ,iter->second->GetIP(), to_string(iter->second->GetPort())});
 		}
 	}
 	s += DB->GetData(orderList[0], "comment2");
-	s += "<H>" + orderList[0] + "<H>";
+	s += "<H>US<H>";
 	user->SendMsg(s);
 }
 void Manager::H(USER* user, vector<string>& orderList) 
@@ -321,14 +338,14 @@ void Manager::LT(USER* user, vector<string>& orderList)
 		}
 		cnt++;
 	}
-	string s = "<H>" + orderList[0] + "<H>";
+	string s = "<H>LT<H>";
 	s += DB->GetData(orderList[0], "comment1");
 	for (int i = 0; i < openRoomIdx.size(); i++) 
 	{
 		s += DB->AssignData(DB->GetData(orderList[0], "comment0"), vector<string>{to_string(openRoomIdx[i] + 1), to_string(RoomList[openRoomIdx[i]].GetUsersSize()) , to_string(RoomList[openRoomIdx[i]].GetMaxCnt()), RoomList[openRoomIdx[i]].GetName()});
 	}
 	s += DB->GetData(orderList[0], "comment1");
-	s += "<H>" + orderList[0] + "<H>";
+	s += "<H>LT<H>";
 	user->SendMsg(s);
 }
 void Manager::J(USER* user, vector<string>& orderList)
@@ -344,23 +361,36 @@ void Manager::J(USER* user, vector<string>& orderList)
 				s = DB->AssignData(DB->GetData(orderList[0], "comment0"), vector<string>{user->GetName() });
 				for (USER* u : user->GetmyRoom()->GetUsers()) 
 				{
-					u->SendMsg(s);
+					if (u != user) {
+						u->SendMsg("<H>UM<H>"+s+"<H>UM<H>");
+					}
+					else {
+						u->SendMsg("<H>RS<H>"+s+"<H>RS<H>");
+					}
 				}
 				return;
 			}
 			else 
 			{
-				s = DB->GetData(orderList[0], "comment1");
+				//인원초과로 인한 입장 불가.
+				s += "<H>PM<H>";
+				s += DB->GetData(orderList[0], "comment1");
+				s += "<H>PM<H>";
 			}
 		}
 		else 
 		{
-			s = DB->GetData(orderList[0], "comment2");
+			//없는방에 입장 시도.
+			s += "<H>PM<H>";
+			s += DB->GetData(orderList[0], "comment2");
+			s += "<H>PM<H>";
 		}
 	}
 	else 
 	{
-		s = DB->GetData(orderList[0], "comment3");
+		s += "<H>PM<H>";
+		s += DB->GetData(orderList[0], "comment3");
+		s += "<H>PM<H>";
 	}
 	user->SendMsg(s);
 }
@@ -378,19 +408,27 @@ void Manager::O(USER* user, vector<string>& orderList)
 				ROOM* room = &RoomList[idx];
 				room->SetRoom(orderList[2], user->GetName(), GetNowTime(), stoi(orderList[1]), idx);
 				room->SetUser(user);
-				s = DB->AssignData(DB->GetData(orderList[0], "comment0"), vector<string>{user->GetName()});
+				s += "<H>RS<H>";
+				s += DB->AssignData(DB->GetData(orderList[0], "comment0"), vector<string>{user->GetName()});
+				s += "<H>RS<H>";
 			}
 			else {
-				s = DB->GetData(orderList[0], "comment1");
+				s += "<H>PM<H>";
+				s += DB->GetData(orderList[0], "comment1");
+				s += "<H>PM<H>";
 			}
 		}
 		else {
-			s = DB->GetData(orderList[0], "comment2");
+			s += "<H>PM<H>";
+			s += DB->GetData(orderList[0], "comment2");
+			s += "<H>PM<H>";
 		}
 	}
 	else 
 	{
-		s = DB->GetData(orderList[0], "comment3");
+		s += "<H>PM<H>";
+		s += DB->GetData(orderList[0], "comment3");
+		s += "<H>PM<H>";
 	}
 	user->SendMsg(s);
 }
@@ -414,27 +452,27 @@ void Manager::TO(USER* user, vector<string>& orderList)
 				{
 					s = DB->GetData(orderList[0], "comment0");
 					string mail;
-					mail = "\r\n# " + user->GetName() + "님의 쪽지 ==>" + orderList[2] + "\r\n";
+					mail = "<H>PM<H>\r\n# " + user->GetName() + "님의 쪽지 ==>" + orderList[2] + "\r\n<H>PM<H>";
 					NameList[orderList[1]]->SendMsg(mail);
 				}
 				else 
 				{
-					s = DB->GetData(orderList[0], "comment1");
+					s = "<H>PM<H>" + DB->GetData(orderList[0], "comment1")+"<H>PM<H>";
 				}
 			}
 			else 
 			{
-				s = DB->GetData(orderList[0], "comment2");
+				s = "<H>MS<H>" + DB->GetData(orderList[0], "comment2") + "<H>MS<H>";
 			}
 		}
 		else 
 		{
-			s = DB->GetData(orderList[0], "comment3");
+			s = "<H>MS<H>" + DB->GetData(orderList[0], "comment3") + "<H>MS<H>";
 		}
 	}
 	else 
 	{
-		s = DB->GetData(orderList[0], "comment4");
+		s = "<H>MS<H>" + DB->GetData(orderList[0], "comment4") + "<H>MS<H>";
 	}
 	user->SendMsg(s);
 }
@@ -444,10 +482,17 @@ void Manager::ST(USER* user, vector<string>& orderList)
 	if (orderList.size() > 1 && IsNumber(orderList[1])) 
 	{
 		int roomIdx = stoi(orderList[1]) - 1;
+		
+		if (RoomList.size()<=0)
+		{
+			s = DB->GetData(orderList[0], "comment4");
+			Msg(user, s);
+			return;
+		}
 		if (RoomList[roomIdx].GetOpen()) 
 		{
 			//룸 정보
-			s+= DB->AssignData(DB->GetData(orderList[0], "comment0"), vector<string>{ to_string(roomIdx + 1), to_string(RoomList[roomIdx].GetUsersSize()), to_string(RoomList[roomIdx].GetMaxCnt()), RoomList[roomIdx].GetName() });
+			s+="<H>ST<H>"+DB->AssignData(DB->GetData(orderList[0], "comment0"), vector<string>{ to_string(roomIdx + 1), to_string(RoomList[roomIdx].GetUsersSize()), to_string(RoomList[roomIdx].GetMaxCnt()), RoomList[roomIdx].GetName() });
 			//개설 시간
 			s +=  DB->AssignData(DB->GetData(orderList[0], "comment1"), vector<string>{RoomList[roomIdx].GetOpenTime() });
 
@@ -457,18 +502,22 @@ void Manager::ST(USER* user, vector<string>& orderList)
 				s+= DB->AssignData(DB->GetData(orderList[0], "comment2"), vector<string>{u->GetName(), u->GetJoinTime()});
 
 			}
-			s += DB->GetData(orderList[0], "comment3");
+			s += DB->GetData(orderList[0], "comment3")+"<H>ST<H>";
+			cout << s;
 		}
 		else 
 		{
 			s= DB->GetData(orderList[0], "comment4");
+			Msg(user, s);
+			return;
 		}
 	}
 	else 
 	{
 		s= DB->GetData(orderList[0], "comment5");
+		Msg(user, s);
+		return;
 	}
-
 	user->SendMsg(s);
 }
 void Manager::PF(USER* user, vector<string>& orderList)
@@ -516,28 +565,48 @@ void Manager::IN_(USER* user, vector<string>& orderList)
 			{
 				if (user->GetmyRoom() != NameList[orderList[1]]->GetmyRoom()) 
 				{
-					s = DB->GetData(orderList[0], "comment0");
-					NameList[orderList[1]]->SendMsg(DB->AssignData(DB->GetData(orderList[0], "comment5"), vector<string>{ user->GetName()}));
+					s = "<H>PM<H>"+DB->GetData(orderList[0], "comment0")+ "<H>PM<H>";
+					string data = "<H>PM<H>" + DB->AssignData(DB->GetData(orderList[0], "comment5"), vector<string>{ user->GetName()}) + "<H>PM<H>";
+					NameList[orderList[1]]->SendMsg(data);
 				}
 				else 
 				{
-					s = DB->GetData(orderList[0], "comment1");
+					s = "<H>PM<H>" + DB->GetData(orderList[0], "comment1") + "<H>PM<H>";
 				}
 			}
 			else 
 			{
-				s = DB->GetData(orderList[0], "comment2");
+				s = "<H>PM<H>" + DB->GetData(orderList[0], "comment2") + "<H>PM<H>";
 			}
 		}
 		else 
 		{
-			s = DB->GetData(orderList[0], "comment3");
+			s = "<H>PM<H>" + DB->GetData(orderList[0], "comment3") + "<H>PM<H>";
 		}
 	}
 	else 
 	{
-		s = DB->GetData(orderList[0], "comment4");
+		s = "<H>PM<H>" + DB->GetData(orderList[0], "comment4") + "<H>PM<H>";
 	}
 	user->SendMsg(s);
 }
-
+string Manager::ForTelnetData(string str)
+{
+	vector<string> src = Manager::getIncetance().Split(str, "@/n");
+	string data = "";
+	for (string s : src)
+	{
+		data += s;
+	}
+	return data;
+}
+string Manager::ForUE4Data(string str)
+{
+	vector<string> src = Manager::getIncetance().Split(str, "@/n");
+	string data = "";
+	for (string s : src)
+	{
+		data+= s+"\n";
+	}
+	return data;
+}
